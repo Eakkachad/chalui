@@ -1,7 +1,10 @@
 import { defineConfig } from 'astro/config';
+import node from '@astrojs/node';
 
 export default defineConfig({
-  // Static output (no SSR needed for POC)
-  output: 'static',
+  output: 'server',
+  adapter: node({
+    mode: 'standalone',
+  }),
   server: { host: true, port: 4321 },
 });

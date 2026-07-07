@@ -78,7 +78,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="fab-stack map-ui">
         <button class="fab-button" id="placePinButton" type="button" aria-label="Place pin"><i class="fa-solid fa-thumbtack"></i></button>
         <button class="fab-button report-fab" id="createReportFab" type="button" aria-label="Report"><i class="fa-solid fa-flag"></i></button>
+        <button class="fab-button chat-fab" id="thaiLlmChatFab" type="button" aria-label="ThaiLLM Advisor" style="background:#5b21b6;color:white"><i class="fa-solid fa-comments"></i></button>
       </div>
+
+      <!-- Section: ThaiLLM Advisor Chat Panel -->
+      <section class="chat-panel tool-panel map-ui" id="thaiLlmChatPanel" aria-hidden="true" style="display:none; position:fixed; bottom:96px; right:20px; width:340px; height:420px; background:rgba(255,255,255,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,0.18); display:flex; flex-direction:column; z-index:1000; border:1px solid rgba(255,255,255,0.45); box-sizing:border-box; overflow:hidden">
+        <header class="tool-header" style="background:linear-gradient(135deg, #5b21b6, #7c3aed); color:white; padding:14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.08); box-sizing:border-box">
+          <div style="display:flex; align-items:center; gap:10px">
+            <i class="fa-solid fa-brain" style="font-size:1.3rem; color:#c084fc; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.1))"></i>
+            <div style="text-align:left">
+              <p class="eyebrow" style="color:rgba(255,255,255,0.75); font-size:0.65rem; margin:0; letter-spacing:0.8px; font-weight:600; text-transform:uppercase">ThaiLLM x Katgpt</p>
+              <h3 style="margin:0; font-size:0.95rem; font-weight:600; letter-spacing:-0.2px">ผู้ช่วยรู้รอบก่อนเดินทาง</h3>
+            </div>
+          </div>
+          <button class="panel-close-btn" id="closeChatPanel" type="button" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; border-radius:50%; width:24px; height:24px; display:flex; justify-content:center; align-items:center; font-size:0.75rem; padding:0; outline:none; transition:background 0.2s" aria-label="Close Chat">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </header>
+        <div class="chat-history" id="chatHistory" style="flex:1; padding:14px; overflow-y:auto; font-size:0.85rem; display:flex; flex-direction:column; gap:12px; background:rgba(249,250,251,0.5); box-sizing:border-box">
+          <div class="chat-message bot" style="background:white; padding:10px 12px; border-radius:14px; border-top-left-radius:2px; align-self:flex-start; max-width:85%; line-height:1.45; text-align:left; border:1px solid rgba(229,231,235,0.8); box-shadow:0 2px 4px rgba(0,0,0,0.02)">
+            สวัสดีครับ ผมคือ <strong>ThaiLLM x Katgpt Advisor</strong> ยินดีให้บริการครับ! สอบถามเกี่ยวกับสภาพจราจร คอขวดเขตก่อสร้าง หรือแนวโน้มรถติดด้วยโมเดล KARC ได้เลยครับ
+          </div>
+        </div>
+        <form class="chat-input-row" id="thaiLlmChatForm" style="padding:12px; border-top:1px solid rgba(0,0,0,0.08); display:flex; gap:8px; background:white; box-sizing:border-box; align-items:center">
+          <input id="chatInput" type="text" placeholder="พิมพ์ถามทางภาษาไทย เช่น สุทธิสารติดปะ..." autocomplete="off" style="flex:1; border:1px solid #d1d5db; border-radius:20px; padding:8px 16px; font-size:0.85rem; outline:none; transition:border-color 0.2s; box-sizing:border-box">
+          <button class="primary-action" type="submit" style="background:linear-gradient(135deg, #5b21b6, #7c3aed); color:white; border:none; border-radius:50%; width:36px; height:36px; display:flex; justify-content:center; align-items:center; cursor:pointer; padding:0; flex-shrink:0; box-shadow:0 2px 8px rgba(91,33,182,0.25)"><i class="fa-solid fa-paper-plane" style="font-size:0.85rem"></i></button>
+        </form>
+      </section>
 
       <section class="legend map-ui">
         <div><span class="legend-dot completed"></span>เสร็จสิ้น</div>
@@ -87,7 +113,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div><span class="legend-dot planned"></span>วางแผน</div>
       </section>
 
-      <nav class="bottom-nav map-ui" aria-label="เมนู">
+      <nav class="bottom-nav map-ui traveler-nav" aria-label="เมนู">
         <a href="/" class="nav-item"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
         <button class="nav-item active" data-nav="home" type="button"><i class="fa-solid fa-map"></i><span>แผนที่</span></button>
         <button class="nav-item" data-nav="alerts" type="button"><i class="fa-solid fa-bell"></i><span>แจ้งเตือน</span></button>
@@ -148,3 +174,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </main>
   </div>
 </BaseLayout>
+
+<style is:global>
+  .traveler-nav {
+    grid-template-columns: repeat(4, minmax(72px, 104px)) !important;
+  }
+  @media (max-width: 700px) {
+    .traveler-nav {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+  }
+</style>
+

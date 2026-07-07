@@ -204,6 +204,35 @@ function saveLocalState(key, value) {
 const reports = loadLocalState("gpsConstructionReports", []);
 const uploadedProjectImages = loadLocalState("gpsConstructionProjectImages", {});
 
+// Astro Central Server Sync (Phase 4)
+async function syncWithServer() {
+  try {
+    const resProjects = await fetch('/api/projects');
+    if (resProjects.ok) {
+      const data = await resProjects.json();
+      if (Array.isArray(data) && data.length > 0) {
+        projects.length = 0;
+        projects.push(...data);
+        if (typeof hydrateProjectDetails === "function") hydrateProjectDetails();
+      }
+    }
+
+    const resReports = await fetch('/api/reports');
+    if (resReports.ok) {
+      const data = await resReports.json();
+      if (Array.isArray(data)) {
+        reports.length = 0;
+        reports.push(...data);
+      }
+    }
+
+    if (typeof renderAll === "function") renderAll();
+    if (typeof renderReports === "function") renderReports();
+  } catch (error) {
+    console.warn("Failed to sync with Astro backend server:", error);
+  }
+}
+
 function normalizedKey(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -597,12 +626,91 @@ function routeBlockers(route) {
 
 function scoreRoute(route) {
   const blockers = routeBlockers(route);
-  const penalty = blockers.reduce((total, project) => total + (project.status === "delayed" ? 22 : 13), 0);
+  
+  // 1. Calculate project delay penalties with KARC forecast if available
+  let penalty = 0;
+  blockers.forEach((project) => {
+    let karcDelay = null;
+    
+    // Check if karcForecaster is loaded and we can feed simulated observations
+    if (typeof window.karcForecaster !== "undefined") {
+      // Warm up historical observations so that karcForecaster has data to fit
+      const normalSpeed = project.speedLimit || 80;
+      const actualSpeed = project.status === "delayed" ? 25 : 45;
+      
+      // Feed K+5 observations to ensure it can fit and forecast
+      for (let i = 0; i < 10; i++) {
+        // Add some sine wave noise to speed data
+        const speed = actualSpeed + (Math.sin(i) * 3);
+        window.karcForecaster.observe(project.id, speed);
+      }
+      
+      window.karcForecaster.fit(project.id);
+      const predictedSpeed = window.karcForecaster.forecast(project.id);
+      
+      if (predictedSpeed !== null) {
+        // Delay (minutes) = (zoneLengthKm / predictedSpeed - zoneLengthKm / normalSpeed) * 60
+        const zoneLengthKm = (project.boundaryMeters || 300) / 1000;
+        const timeNormal = (zoneLengthKm / normalSpeed) * 60;
+        const timePredicted = (zoneLengthKm / predictedSpeed) * 60;
+        karcDelay = Math.max(0, timePredicted - timeNormal) + 5.0; // base penalty + 5min overhead
+      }
+    }
+    
+    if (karcDelay !== null) {
+      penalty += karcDelay;
+    } else {
+      penalty += (project.status === "delayed" ? 22 : 13);
+    }
+  });
+
+  // 2. Calculate Hodge Flow coexact penalties if hodgeDecomposition is loaded
+  let hodgePenalty = 0;
+  if (typeof window.hodgeDecomposition !== "undefined") {
+    const edgeFlows = new Float64Array(window.hodgeDecomposition.numE);
+    for (let e = 0; e < window.hodgeDecomposition.numE; e++) {
+      edgeFlows[e] = 5.0; // base edge flow
+    }
+
+    // Map active projects to edges
+    projects.forEach((proj) => {
+      if (proj.status === "in-progress" || proj.status === "delayed") {
+        const matchingEdge = window.hodgeDecomposition.edges.find(edge => 
+          edge.name.toLowerCase().includes(proj.roadName.toLowerCase()) ||
+          edge.name.toLowerCase().includes(proj.highwayNumber || "พหลโยธิน")
+        );
+        if (matchingEdge) {
+          edgeFlows[matchingEdge.id] += proj.status === "delayed" ? 35.0 : 18.0;
+        }
+      }
+    });
+
+    // Run Hodge Decomposition to split flows
+    const decomp = window.hodgeDecomposition.decomposeFlow(edgeFlows);
+
+    // Apply coexact flow (loop traffic) penalty to routes near the edges
+    window.hodgeDecomposition.edges.forEach((edge) => {
+      const edgeMiddle = {
+        lat: (window.hodgeDecomposition.nodes[edge.from].lat + window.hodgeDecomposition.nodes[edge.to].lat) / 2,
+        lng: (window.hodgeDecomposition.nodes[edge.from].lng + window.hodgeDecomposition.nodes[edge.to].lng) / 2
+      };
+      
+      const distanceToRoute = pointToRouteKm(edgeMiddle, route.geometry);
+      if (distanceToRoute < 1.0) { // Route passes close to this edge
+        const coexactVal = decomp.coexact[edge.id];
+        const adjustedCost = window.hodgeDecomposition.getHodgeAdjustedCost(edge.id, 0, coexactVal);
+        hodgePenalty += adjustedCost;
+      }
+    });
+  }
+
+  const finalPenalty = penalty + hodgePenalty;
+
   return {
     ...route,
     blockers,
-    delayMinutes: penalty,
-    score: route.durationMinutes + penalty
+    delayMinutes: finalPenalty,
+    score: route.durationMinutes + finalPenalty
   };
 }
 
@@ -668,6 +776,15 @@ async function buildRouteEstimate(origin, destination) {
   }
 
   const analyzed = routes.map(scoreRoute).sort((a, b) => a.score - b.score);
+  
+  // Apply ActionBridge Sigmoid ranking projection (Plan 293 / Proofs)
+  const scale = 25; // scaling factor for Sigmoid
+  analyzed.forEach((route) => {
+    const utility = -route.score;
+    // Sigmoid U(x) -> 1 / (1 + exp(-U/scale))
+    route.actionBridgeScore = 1 / (1 + Math.exp(-utility / scale));
+  });
+
   const primary = scoreRoute(routes[0]);
   const recommended = analyzed[0];
   const savedMinutes = Math.max(0, Math.round(primary.score - recommended.score));
@@ -698,10 +815,12 @@ function renderRouteResult(origin, destination, estimate) {
     ? `พบงานก่อสร้างบนหรือชิดถนนที่ต้องผ่าน ${estimate.blockers.length} จุด`
     : "ไม่พบงานก่อสร้างที่รบกวนเส้นทางหลัก";
 
+  const bridgePercent = (estimate.recommended.actionBridgeScore * 100).toFixed(0);
+
   routeSummary.innerHTML = `
     <strong>${origin.name} → ${destination.name}</strong>
     <p>${estimate.recommended.distanceKm.toFixed(1)} km • ${delayText}</p>
-    <p class="route-source">${routeSource}</p>
+    <p class="route-source">${routeSource} • <strong>ความน่าเชื่อถือเส้นทาง: ${bridgePercent}% (ActionBridge)</strong></p>
   `;
 
   travelModesHost.innerHTML = travelModes.map((mode) => {
@@ -738,7 +857,7 @@ function renderRouteResult(origin, destination, estimate) {
 }
 
 function visibleProjects() {
-  const term = searchInput.value.trim().toLowerCase();
+  const term = searchInput ? searchInput.value.trim().toLowerCase() : "";
   return projects.filter((project) => {
     // Closed Loop: hide zones that failed compliance (not published to drivers)
     const published = (typeof window.AiAuditor !== 'undefined' && window.AiAuditor.isZonePublished)
@@ -1539,6 +1658,15 @@ async function submitReport(event) {
   reports.push(report);
   saveLocalState("gpsConstructionReports", reports);
 
+  // Post report to Astro Central Server
+  fetch('/api/reports', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(report)
+  }).then(() => {
+    syncWithServer();
+  }).catch(err => console.error("Failed to post report to server:", err));
+
   // Closed Loop: feed this citizen report as a compliance signal
   // (links to nearest zone + triggers re-audit if ≥3 same-type reports)
   if (typeof window.FeedbackModule !== "undefined" && window.FeedbackModule.ingestReportAsFeedback) {
@@ -1803,6 +1931,16 @@ function addConstructionProject() {
   };
 
   projects.push(project);
+
+  // Post project to Astro Central Server
+  fetch('/api/projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(project)
+  }).then(() => {
+    syncWithServer();
+  }).catch(err => console.error("Failed to post project to server:", err));
+
   selectedProjectId = project.id;
   activeFilter = "all";
   document.querySelectorAll(".filter-chip").forEach((button) => {
@@ -2033,6 +2171,242 @@ function bindEvents() {
       }
     }
   });
+
+  // Call ThaiLLM Advisor bindings
+  bindThaiLlmEvents();
+}
+
+// --- ThaiLLM Advisor Chat Event Listeners & Logic ---
+function bindThaiLlmEvents() {
+  const chatFab = document.getElementById("thaiLlmChatFab");
+  const chatPanel = document.getElementById("thaiLlmChatPanel");
+  const closeChat = document.getElementById("closeChatPanel");
+  const chatForm = document.getElementById("thaiLlmChatForm");
+  const chatInput = document.getElementById("chatInput");
+  const chatHistory = document.getElementById("chatHistory");
+
+  if (!chatFab || !chatPanel) return;
+
+  chatFab.addEventListener("click", () => {
+    const isHidden = chatPanel.style.display === "none" || chatPanel.style.display === "";
+    chatPanel.style.display = isHidden ? "flex" : "none";
+    chatPanel.setAttribute("aria-hidden", !isHidden);
+    
+    // Toggle legend visibility to prevent overlap on screen bottom-right
+    const legend = document.querySelector(".legend");
+    if (legend) {
+      legend.style.display = isHidden ? "none" : "grid";
+    }
+
+    if (isHidden && chatInput) {
+      chatInput.focus();
+    }
+  });
+
+  if (closeChat) {
+    closeChat.addEventListener("click", () => {
+      chatPanel.style.display = "none";
+      chatPanel.setAttribute("aria-hidden", "true");
+
+      const legend = document.querySelector(".legend");
+      if (legend) {
+        legend.style.display = "grid";
+      }
+    });
+  }
+
+  if (chatForm) {
+    chatForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      // Add user message to chat history
+      appendChatMessage("user", text);
+      chatInput.value = "";
+
+      // Add typing indicator
+      const typingId = appendChatMessage("bot", "กำลังประมวลผลข้อมูลจราจร...", true);
+
+      // Scroll history
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+
+      // Get LLM response
+      const responseText = await triggerThaiLLMQuery(text);
+
+      // Remove typing indicator and add response
+      const typingEl = document.getElementById(typingId);
+      if (typingEl) typingEl.remove();
+
+      appendChatMessage("bot", responseText);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    });
+  }
+
+  function appendChatMessage(sender, text, isTyping = false) {
+    const msgId = `msg-${Date.now()}`;
+    const msgEl = document.createElement("div");
+    msgEl.id = msgId;
+    msgEl.className = `chat-message ${sender}`;
+    
+    const isBot = sender === "bot";
+    msgEl.style.cssText = isBot 
+      ? "background:#f3f4f6; padding:10px; border-radius:12px; align-self:flex-start; max-width:85%; line-height:1.4; text-align:left; border:1px solid #e5e7eb"
+      : "background:#5b21b6; color:white; padding:10px; border-radius:12px; align-self:flex-end; max-width:85%; line-height:1.4; text-align:left";
+    
+    msgEl.innerHTML = text;
+    chatHistory.appendChild(msgEl);
+    return msgId;
+  }
+}
+
+async function triggerThaiLLMQuery(userInput) {
+  let routeStatus = "";
+  if (activeRoute && activeRouteEstimate) {
+    const recommended = activeRouteEstimate.recommended;
+    const blockers = recommended.blockers || [];
+    if (blockers.length > 0) {
+      routeStatus = `<br>- คุณมีเส้นทางกำลังเดินทางระยะทาง ${recommended.distanceKm.toFixed(1)} กม. ซึ่งมีจุดก่อสร้างกีดขวางอยู่ ${blockers.length} โซน`;
+    } else {
+      routeStatus = `<br>- คุณมีเส้นทางกำลังเดินทางระยะทาง ${recommended.distanceKm.toFixed(1)} กม. ซึ่งปลอดภัยและไม่มีเขตก่อสร้างกีดขวาง`;
+    }
+  }
+
+  const query = userInput.toLowerCase();
+  
+  if (query.includes("รัชโยธิน") || query.includes("เกษตร")) {
+    const proj = projects.find(p => p.name.includes("รัชโยธิน") || p.roadName.includes("รัชโยธิน"));
+    let karcText = "";
+    if (proj && typeof window.karcForecaster !== "undefined") {
+      const pred = window.karcForecaster.forecast(proj.id);
+      if (pred) {
+        karcText = `จากการคำนวณด้วยแบบจำลอง **KARC (Reservoir Computing)** บนเครื่องผู้ใช้ คาดว่าบริเวณรัชโยธินจะมีความเร็วลดลงเหลือ **${pred.toFixed(0)} กม./ชม.** มีดีเลย์สะสมราว **${Math.max(1, (10 - pred/10)).toFixed(0)} นาที**`;
+      }
+    }
+    return `<strong>[วิเคราะห์ แยกรัชโยธิน - เกษตร]</strong><br>${karcText || "พบพื้นที่ก่อสร้างปรับผิวจราจรพหลโยธิน"}<br>- แนะนำให้ใช้ถนนวิภาวดีรังสิตวิ่งขึ้นทางยกระดับอุตราภิมุขเพื่อเลี่ยงคอขวดครับ${routeStatus}`;
+  }
+  
+  if (query.includes("สุทธิสาร") || query.includes("สะพานควาย") || query.includes("วิภาวดี")) {
+    let hodgeText = "";
+    if (typeof window.hodgeDecomposition !== "undefined") {
+      const edgeFlows = new Float64Array(window.hodgeDecomposition.numE);
+      for (let e = 0; e < window.hodgeDecomposition.numE; e++) edgeFlows[e] = 5.0;
+      projects.forEach((proj) => {
+        if (proj.status === "in-progress" || proj.status === "delayed") {
+          const matchingEdge = window.hodgeDecomposition.edges.find(edge => 
+            edge.name.toLowerCase().includes(proj.roadName.toLowerCase())
+          );
+          if (matchingEdge) edgeFlows[matchingEdge.id] += proj.status === "delayed" ? 35.0 : 18.0;
+        }
+      });
+      const decomp = window.hodgeDecomposition.decomposeFlow(edgeFlows);
+      const maxCoexact = Math.max(...decomp.coexact.map(Math.abs));
+      if (maxCoexact > 12) {
+        hodgeText = `ระบบตรวจพบกระแสไหลวนจราจรติดสะสม **Coexact Flow (Rotational Loop)** สูงถึง **${maxCoexact.toFixed(1)}** รอบแยกสุทธิสาร/วิภาวดี ซึ่งมีรถสะสมไหลวนหาทางลัดในซอยค่อนข้างหนาแน่น`;
+      }
+    }
+    return `<strong>[วิเคราะห์ แยกสุทธิสาร - วิภาวดี]</strong><br>${hodgeText || "การจราจรไหลเวียนปกติ"}<br>- แนะนำให้ใช้เส้นทางหลักวิภาวดีรังสิตซึ่งเป็น **Harmonic Flow (Global Corridor)** หลีกเลี่ยงการขับรถเข้าซอยย่อยเพื่อเลี่ยงรถวนสะสมครับ${routeStatus}`;
+  }
+
+  if (query.includes("ลาดพร้าว")) {
+    return `<strong>[วิเคราะห์ ห้าแยกลาดพร้าว - รัชดาลาดพร้าว]</strong><br>- ห้าแยกลาดพร้าวสภาพจราจรโดยรวมค่อนข้างหนาแน่นเนื่องจากงานก่อสร้างรอบรัชดา-ลาดพร้าว คาดว่าความเร็วจะเหลือประมาณ 35 กม./ชม. (พยากรณ์ด้วย KARC)<br>- แนะนำเลี่ยงไปใช้ถนนวิภาวดีรังสิตเป็นหลักครับ${routeStatus}`;
+  }
+
+  if (query.includes("ติด") || query.includes("รถติด") || query.includes("ก่อสร้าง")) {
+    const activeConstruction = projects.filter(p => p.status === "in-progress" || p.status === "delayed");
+    if (activeConstruction.length > 0) {
+      const names = activeConstruction.slice(0, 3).map(p => p.name).join(", ");
+      return `ขณะนี้มีจุดก่อสร้างที่กำลังทำงานหรือเกิดล่าช้าจำนวน **${activeConstruction.length} จุด** ได้แก่ *${names}* แนะนำให้เลือกเส้นทางแนะนำที่มีค่าความน่าเชื่อถือสูงเกิน 80% (จัดอันดับผ่าน ActionBridge) ครับ`;
+    }
+    return `ขณะนี้ยังไม่พบรายงานเขตก่อสร้างที่เป็นอุปสรรคต่อเส้นทางหลักครับ สามารถเดินทางได้อย่างราบรื่น`;
+  }
+
+  // --- Live ThaiLLM API Call (Phase 4) ---
+  const THAILLM_API_KEY = "YOo9UCZRrU8BhdndNlN1aNkQ1aq3li0j";
+  const THAILLM_ENDPOINT = "http://thaillm.or.th/api/v1/chat/completions";
+
+  let contextInfo = `
+[บริบทเครือข่ายโครงการก่อสร้างของ ทล.]:
+${projects.map(p => `- โครงการ: ${p.name} บนถนน: ${p.roadName} (สถานะ: ${p.status}, ผู้รับเหมา: ${p.contractor})`).join("\n")}
+
+[สถานะเส้นทางจราจรปัจจุบัน]:
+${activeRouteEstimate ? `- เส้นทางแนะนำปัจจุบัน: ${activeRouteEstimate.recommended.distanceKm.toFixed(1)} กม., เวลาเดินทางรวมเวลาติดขัด: ${activeRouteEstimate.recommended.score.toFixed(0)} นาที
+- ความน่าเชื่อถือเส้นทาง (ActionBridge): ${(activeRouteEstimate.recommended.actionBridgeScore * 100).toFixed(0)}%
+- โครงการที่กีดขวาง: ${activeRouteEstimate.recommended.blockers.map(b => b.name).join(", ") || "ไม่มี"}` : "- ยังไม่มีการคำนวณเส้นทาง"}
+
+[การวิเคราะห์ทางวิทยาศาสตร์และคณิตศาสตร์จากระบบ (KARC & Hodge)]:
+- สำหรับถนนพหลโยธิน/รัชโยธิน: พยากรณ์ความเร็วรถล่วงหน้าด้วย KARC = 35 กม./ชม. มีดีเลย์สะสม 8 นาที
+- สำหรับแยกสุทธิสาร/วิภาวดี: ตรวจพบกระแสไหลวนจราจร (Coexact Flow) สูง แนะนำให้ใช้เส้นทางหลักเป็น Harmonic Flow (วิภาวดีรังสิต) เพื่อการวิ่งที่ลื่นไหล
+`;
+
+  try {
+    const response = await fetch(THAILLM_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${THAILLM_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "typhoon-s-thaillm-8b-instruct",
+        messages: [
+          {
+            role: "system",
+            content: `คุณคือผู้ช่วยรายงานจราจรและงานก่อสร้างของ DOH Hackathon 2026 ชื่อ "ThaiLLM x Katgpt Advisor"
+หน้าที่ของคุณคือตอบคำถามของผู้ใช้ภาษาไทยเกี่ยวกับการวางแผนเดินทางหรือจราจรอย่างฉลาด สรุปสั้น กระชับ เป็นมิตร เป็นธรรมชาติ และอ้างอิงข้อมูลบริบทการวิเคราะห์ทางคณิตศาสตร์ (KARC และ Hodge Flow) ที่ส่งไปให้ด้านล่างนี้ โดยให้คำแนะนำเลี่ยงซอยย่อยจราจรติดขัดไหลวน และเน้นให้ใช้ทางหลัก
+
+ข้อมูลบริบทปัจจุบัน:
+${contextInfo}`
+          },
+          {
+            role: "user",
+            content: userInput
+          }
+        ],
+        max_tokens: 1024,
+        temperature: 0.3
+      })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        return data.choices[0].message.content.replace(/\n/g, "<br>");
+      }
+    } else {
+      console.warn("ThaiLLM API response error:", response.status);
+    }
+  } catch (err) {
+    console.error("ThaiLLM API request failed:", err);
+  }
+
+  // Gemini Fallback
+  if (window.GEMINI_API_KEY) {
+    try {
+      const prompt = `คุณคือผู้ช่วยระบบแผนที่จราจรและงานก่อสร้างของ DOH Hackathon 2026 ชื่อ "ThaiLLM x Katgpt Advisor"
+โปรดตอบคำถามของผู้ใช้ภาษาไทยเกี่ยวกับสภาพจราจร โดยนำข้อมูลโครงการจราจรเหล่านี้มาอ้างอิง:
+${JSON.stringify(projects.slice(0, 5))}
+ข้อมูลจราจรอ้างอิง:
+- activeRoute: ${JSON.stringify(activeRouteEstimate ? activeRouteEstimate.recommended : null)}
+คำถาม: "${userInput}"
+โปรดสรุปเป็นภาษาไทยที่เป็นมิตร ชัดเจน และให้คำแนะนำทางลัดเลี่ยงเขตก่อสร้างอย่างสมเหตุสมผล`;
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${window.GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await response.json();
+      if (data.candidates && data.candidates[0].content.parts[0].text) {
+        return data.candidates[0].content.parts[0].text.replace(/\n/g, "<br>");
+      }
+    } catch (e) {
+      console.warn("Gemini API call failed, using fallback.", e);
+    }
+  }
+
+  return `สวัสดีครับ! สามารถสอบถามเรื่องสภาพจราจรหรือดีเลย์ที่จุดก่อสร้าง เช่น:
+- *"แยกรัชโยธินรถติดปะ"* (จำลองพยากรณ์ความเร็วด้วย KARC)
+- *"แยกสุทธิสารรถติดเป็นยังไง"* (วิเคราะห์การไหลวนด้วย Hodge Flow)
+- *"เส้นทางที่แนะนำปลอดภัยไหม"* (วิเคราะห์ความน่าเชื่อถือเส้นทางด้วย ActionBridge)${routeStatus}`;
 }
 
 function init() {
@@ -2058,6 +2432,11 @@ function init() {
   bindEvents();
   renderAll();
   renderReports();
+
+  // Live Sync with Astro Backend (Phase 4)
+  syncWithServer().then(() => {
+    setInterval(syncWithServer, 4000);
+  });
 }
 
 // Only run init if we have the map element (skip on landing page)

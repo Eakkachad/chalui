@@ -71,6 +71,14 @@ function approveZone(zoneId) {
   zone.status = 'in-progress';
   zone.publishedToDrivers = true;
   zone.approvedAt = new Date().toISOString();
+
+  // Send update to server
+  fetch('/api/projects', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(zone)
+  }).catch(err => console.error("Failed to update approved zone:", err));
+
   if (typeof renderAll === 'function') renderAll();
   if (typeof renderMarkers === 'function') renderMarkers();
   if (window.AiAuditor && window.AiAuditor.persistComplianceState) window.AiAuditor.persistComplianceState();
@@ -125,6 +133,14 @@ function openRejectModal(zone) {
     zone.publishedToDrivers = false;
     zone.rejectedAt = new Date().toISOString();
     zone.rejectedBy = 'admin';
+
+    // Send update to server
+    fetch('/api/projects', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(zone)
+    }).catch(err => console.error("Failed to update rejected zone:", err));
+
     if (typeof renderAll === 'function') renderAll();
     if (typeof renderMarkers === 'function') renderMarkers();
     if (typeof showToast === 'function') showToast(`❌ ปฏิเสธ: ${zone.name}`);
