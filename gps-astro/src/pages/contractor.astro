@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="ผู้รับเหมา" role="contractor">
+  <div class="mobile-page">
+    <header class="mobile-header">
+      <a href="/" class="back-btn" aria-label="กลับ"><i class="fa-solid fa-arrow-left"></i></a>
+      <div>
+        <h1>ผู้รับเหมา</h1>
+        <small>รายงานพื้นที่ก่อสร้าง</small>
+      </div>
+    </header>
+
+    <div class="mobile-content">
+      <!-- Section: New report form -->
+      <section id="sec-form">
+        <div class="mini-map"><div id="map"></div></div>
+
+        <div class="card" style="margin-top:14px">
+          <h3><i class="fa-solid fa-helmet-safety"></i> เพิ่มงานก่อสร้างใหม่</h3>
+          <div class="card-grid">
+            <label><span>ชื่องาน</span><input id="constructionName" type="text" placeholder="เช่น ปรับผิวจราจรช่วงทางแยก"></label>
+            <div class="card-grid two">
+              <label><span>ประเภทงาน</span><select id="constructionType"><option value="Road resurfacing">ซ่อมผิวจราจร</option><option value="Drainage">ระบบระบายน้ำ</option><option value="Utility relocation">ย้ายสาธารณูปโภค</option><option value="Bridge repair">ซ่อมสะพาน</option><option value="Signal upgrade">ปรับสัญญาณ</option></select></label>
+              <label><span>สถานะ</span><select id="constructionStatus"><option value="in-progress">กำลังทำ</option><option value="delayed">ล่าช้า</option><option value="planned">วางแผน</option><option value="completed">เสร็จสิ้น</option></select></label>
+            </div>
+            <label><span>ถนน / Corridor</span><select id="constructionRoad"></select></label>
+            <div class="card-grid two">
+              <label><span>Latitude</span><input id="constructionLat" type="number" step="0.000001"></label>
+              <label><span>Longitude</span><input id="constructionLng" type="number" step="0.000001"></label>
+            </div>
+            <div class="card-grid two">
+              <label><span>เริ่มงาน</span><input id="constructionStart" type="datetime-local"></label>
+              <label><span>สิ้นสุด</span><input id="constructionEnd" type="datetime-local"></label>
+            </div>
+            <div class="card-grid two">
+              <label><span>Timestamp</span><input id="constructionTimestamp" type="datetime-local"></label>
+              <label><span>ขอบเขต (ม.)</span><input id="constructionBoundary" type="number" min="40" max="900" step="10" value="280"></label>
+            </div>
+            <div class="card-grid two">
+              <label><span>โทนรูปพื้นที่</span><select id="constructionPhotoTheme"><option value="black-red-white">ดำ/แดง/ขาว</option><option value="green-yellow-white">เขียว/เหลือง/ขาว</option></select></label>
+              <label><span>หมายเหตุ</span><input id="constructionStatusNote" type="text" placeholder="เช่น ปิด 1 ช่อง"></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fa-solid fa-camera"></i> รูปถ่ายหน้างาน</h3>
+          <label><span>อัปโหลดรูป (สำหรับส่งตรวจ AI)</span><input id="contractorPhoto" type="file" accept="image/*"></label>
+          <img id="contractorPhotoPreview" alt="preview" style="display:none;width:100%;border-radius:12px;margin-top:10px;max-height:200px;object-fit:cover">
+        </div>
+
+        <button class="big-action" id="addConstruction" type="button"><i class="fa-solid fa-plus"></i> ส่งรายงานพื้นที่</button>
+      </section>
+
+      <!-- Section: My projects list -->
+      <section id="sec-projects" class="section-hidden">
+        <div class="card">
+          <h3><i class="fa-solid fa-list"></i> โครงการของฉัน</h3>
+          <div class="filter-row" role="tablist">
+            <button class="filter-chip active" data-filter="all" type="button">ทั้งหมด</button>
+            <button class="filter-chip" data-filter="in-progress" type="button">กำลังทำ</button>
+            <button class="filter-chip" data-filter="delayed" type="button">ล่าช้า</button>
+            <button class="filter-chip" data-filter="planned" type="button">วางแผน</button>
+          </div>
+          <section class="project-list" id="projectList" style="margin-top:12px"></section>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <!-- hidden detail modal for openProjectDetail() compatibility -->
+      <section class="detail-modal" id="detailModal" aria-hidden="true">
+        <div class="detail-panel">
+          <header class="detail-header"><div><p class="eyebrow">Detail</p><h2 id="detailName">-</h2></div><button class="panel-toggle" id="closeDetail" type="button">X</button></header>
+          <div class="detail-body">
+            <div class="detail-photo-grid" id="detailPhotos"></div>
+            <dl class="detail-list">
+              <dt>ประเภท</dt><dd id="detailType">-</dd>
+              <dt>GPS</dt><dd id="detailGps">-</dd>
+              <dt>ขอบเขต</dt><dd id="detailBoundary">-</dd>
+              <dt>Timestamp</dt><dd id="detailTimestamp">-</dd>
+              <dt>เริ่ม</dt><dd id="detailStart">-</dd>
+              <dt>สิ้นสุด</dt><dd id="detailEnd">-</dd>
+              <dt>สถานะ</dt><dd id="detailStatus">-</dd>
+              <dt>อัปเดต</dt><dd id="detailStatusNote">-</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <nav class="mobile-bottom-nav">
+      <a href="/"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
+      <button class="active" data-section="sec-form" type="button"><i class="fa-solid fa-plus"></i><span>เพิ่มงาน</span></button>
+      <button data-section="sec-projects" type="button"><i class="fa-solid fa-list"></i><span>โครงการ</span></button>
+    </nav>
+  </div>
+
+  <script is:inline>
+    // Section switcher for contractor bottom nav
+    document.querySelectorAll('.mobile-bottom-nav [data-section]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mobile-bottom-nav [data-section]').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('#sec-form, #sec-projects').forEach((s) => s.classList.add('section-hidden'));
+        document.getElementById(btn.dataset.section).classList.remove('section-hidden');
+      });
+    });
+    // Photo preview
+    const cp = document.getElementById('contractorPhoto');
+    if (cp) cp.addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = (ev) => {
+        const img = document.getElementById('contractorPhotoPreview');
+        img.src = ev.target.result; img.style.display = 'block';
+      };
+      r.readAsDataURL(f);
+    });
+  </script>
+</BaseLayout>

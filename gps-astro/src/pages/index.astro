@@ -1,0 +1,89 @@
+---
+// Landing page — เลือก Role
+---
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GPS Construction — เลือกบทบาท</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <style>
+      * { box-sizing: border-box; margin: 0; }
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #0f2419 0%, #1a3a2a 50%, #0d1f16 100%);
+        color: #fff;
+        padding: 20px;
+      }
+      .container { max-width: 440px; width: 100%; text-align: center; }
+      .logo { font-size: 2.4rem; margin-bottom: 8px; }
+      h1 { font-size: 1.6rem; margin-bottom: 6px; }
+      .subtitle { color: #9cb8a8; font-size: 0.9rem; margin-bottom: 36px; }
+      .role-grid { display: grid; gap: 14px; }
+      .role-card {
+        display: grid; grid-template-columns: auto 1fr;
+        gap: 14px; align-items: center;
+        padding: 18px 20px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        text-decoration: none; color: #fff;
+        transition: background 200ms, transform 100ms;
+      }
+      .role-card:hover { background: rgba(255,255,255,0.12); transform: scale(1.02); }
+      .role-card:active { transform: scale(0.98); }
+      .role-icon {
+        width: 52px; height: 52px;
+        border-radius: 12px;
+        display: grid; place-items: center;
+        font-size: 1.3rem;
+      }
+      .role-icon.trav { background: #1f9a9a; }
+      .role-icon.con { background: #f1b12c; }
+      .role-icon.adm { background: #3378dc; }
+      .role-info { text-align: left; }
+      .role-info strong { display: block; font-size: 1rem; margin-bottom: 3px; }
+      .role-info span { font-size: 0.78rem; color: #9cb8a8; }
+      .footer { margin-top: 40px; font-size: 0.72rem; color: #5a7a6a; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">🛣️</div>
+      <h1>GPS Construction Platform</h1>
+      <p class="subtitle">รู้รอบก่อนเดินทาง — Data for Better Journey</p>
+
+      <div class="role-grid">
+        <a href="/traveler" class="role-card">
+          <div class="role-icon trav"><i class="fa-solid fa-car"></i></div>
+          <div class="role-info">
+            <strong>ผู้เดินทาง (Traveler)</strong>
+            <span>แผนที่ + แจ้งเตือนก่อสร้าง + วางแผนเส้นทาง</span>
+          </div>
+        </a>
+
+        <a href="/contractor" class="role-card">
+          <div class="role-icon con"><i class="fa-solid fa-helmet-safety"></i></div>
+          <div class="role-info">
+            <strong>ผู้รับเหมา (Contractor)</strong>
+            <span>รายงานพื้นที่ก่อสร้าง + ส่งรูปตรวจมาตรฐาน</span>
+          </div>
+        </a>
+
+        <a href="/admin" class="role-card">
+          <div class="role-icon adm"><i class="fa-solid fa-shield-halved"></i></div>
+          <div class="role-info">
+            <strong>เจ้าหน้าที่ ทล. (Admin)</strong>
+            <span>อนุมัติงาน + AI ตรวจมาตรฐาน + ติดตาม KPI</span>
+          </div>
+        </a>
+      </div>
+
+      <p class="footer">DOH Hackathon 2026 — GPS Construction Platform POC</p>
+    </div>
+  </body>
+</html>

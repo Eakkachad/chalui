@@ -1,0 +1,31 @@
+---
+interface Props {
+  title: string;
+  role?: 'traveler' | 'contractor' | 'admin';
+}
+const { title, role } = Astro.props;
+---
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — GPS Construction</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body data-role={role || ''}>
+    <slot />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" is:inline></script>
+    <script is:inline define:vars={{ role }}>
+      window.APP_ROLE = role || 'traveler';
+    </script>
+    <script src="/js/ai-auditor.js" is:inline></script>
+    <script src="/js/alerts.js" is:inline></script>
+    <script src="/js/feedback.js" is:inline></script>
+    <script src="/js/admin.js" is:inline></script>
+    <script src="/js/script.js" is:inline></script>
+  </body>
+</html>

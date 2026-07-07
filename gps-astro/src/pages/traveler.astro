@@ -1,0 +1,150 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="ผู้เดินทาง" role="traveler">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Project list">
+      <header class="brand-panel">
+        <div>
+          <p class="eyebrow">DOH Construction GPS</p>
+          <h1>โครงการก่อสร้าง</h1>
+        </div>
+        <button class="icon-button mobile-close" id="closeSidebar" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </header>
+      <section class="summary-grid" aria-label="Summary">
+        <div class="summary-item"><span id="totalProjects">0</span><small>Projects</small></div>
+        <div class="summary-item"><span id="activeProjects">0</span><small>Active</small></div>
+        <div class="summary-item"><span id="delayedProjects">0</span><small>Delayed</small></div>
+      </section>
+      <div class="filter-row" role="tablist">
+        <button class="filter-chip active" data-filter="all" type="button">All</button>
+        <button class="filter-chip" data-filter="in-progress" type="button">Progress</button>
+        <button class="filter-chip" data-filter="delayed" type="button">Delayed</button>
+        <button class="filter-chip" data-filter="planned" type="button">Planned</button>
+      </div>
+      <section class="project-list" id="projectList" aria-label="Projects"></section>
+    </aside>
+
+    <main class="map-workspace">
+      <div class="top-bar map-ui">
+        <button class="icon-button sidebar-toggle" id="openSidebar" aria-label="Open list">
+          <i class="fa-solid fa-list"></i>
+        </button>
+        <form class="search-box" id="searchForm" role="search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="searchInput" type="search" placeholder="ค้นหาโครงการ ถนน จังหวัด" autocomplete="off">
+          <button class="search-submit" type="submit">Search</button>
+        </form>
+        <button class="icon-button" id="locateButton" aria-label="ตำแหน่งปัจจุบัน">
+          <i class="fa-solid fa-location-crosshairs"></i>
+        </button>
+      </div>
+
+      <div id="map" aria-label="แผนที่งานก่อสร้าง"></div>
+
+      <section class="route-panel tool-panel map-ui">
+        <header class="tool-header">
+          <div><p class="eyebrow">Route Planner</p><h2>คำนวณเส้นทาง</h2></div>
+          <button class="panel-toggle" id="toggleRoutePanel" type="button">-</button>
+        </header>
+        <div class="tool-body" id="routePanelBody">
+          <div class="field-grid">
+            <label><span>ต้นทาง</span><input id="originInput" list="addressOptions" type="text" placeholder="เช่น Central Ladprao" autocomplete="off"></label>
+            <label><span>จุดหมาย</span><input id="destinationInput" list="addressOptions" type="text" placeholder="เช่น Don Mueang Airport" autocomplete="off"></label>
+            <datalist id="addressOptions"></datalist>
+          </div>
+          <div class="route-action-row">
+            <button class="primary-action" id="calculateRoute" type="button">Calculate</button>
+            <button class="secondary-action" id="driveRoute" type="button"><i class="fa-solid fa-car-side"></i><span>Drive</span></button>
+          </div>
+          <div class="drive-control-row">
+            <label><span>Speed</span><select id="driveSpeed"><option value="1">1x</option><option value="5">5x</option><option value="10">10x</option></select></label>
+            <div class="drive-readout" id="driveReadout"><strong>Ready</strong><span>Distance and ETA appear during drive.</span></div>
+          </div>
+          <div class="route-summary" id="routeSummary"><p>ใส่ต้นทางและจุดหมาย</p></div>
+          <div class="travel-modes" id="travelModes"></div>
+          <div class="avoidance-box" id="avoidanceBox"><strong>คำแนะนำ</strong><p>ระบบจะแจ้งเตือนเมื่อเส้นทางผ่านจุดก่อสร้าง</p></div>
+        </div>
+      </section>
+
+      <div class="map-controls map-ui">
+        <button class="control-button" id="zoomIn" type="button" aria-label="Zoom in"><i class="fa-solid fa-plus"></i></button>
+        <button class="control-button" id="zoomOut" type="button" aria-label="Zoom out"><i class="fa-solid fa-minus"></i></button>
+        <button class="control-button" id="recenter" type="button" aria-label="Recenter"><i class="fa-solid fa-crosshairs"></i></button>
+      </div>
+
+      <div class="fab-stack map-ui">
+        <button class="fab-button" id="placePinButton" type="button" aria-label="Place pin"><i class="fa-solid fa-thumbtack"></i></button>
+        <button class="fab-button report-fab" id="createReportFab" type="button" aria-label="Report"><i class="fa-solid fa-flag"></i></button>
+      </div>
+
+      <section class="legend map-ui">
+        <div><span class="legend-dot completed"></span>เสร็จสิ้น</div>
+        <div><span class="legend-dot in-progress"></span>กำลังทำ</div>
+        <div><span class="legend-dot delayed"></span>ล่าช้า</div>
+        <div><span class="legend-dot planned"></span>วางแผน</div>
+      </section>
+
+      <nav class="bottom-nav map-ui" aria-label="เมนู">
+        <a href="/" class="nav-item"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
+        <button class="nav-item active" data-nav="home" type="button"><i class="fa-solid fa-map"></i><span>แผนที่</span></button>
+        <button class="nav-item" data-nav="alerts" type="button"><i class="fa-solid fa-bell"></i><span>แจ้งเตือน</span></button>
+        <button class="nav-item" data-nav="reports" type="button"><i class="fa-solid fa-flag"></i><span>Reports</span></button>
+      </nav>
+
+      <div class="toast map-ui" id="toast" role="status" aria-live="polite"></div>
+
+      <section class="detail-modal map-ui" id="detailModal" aria-hidden="true">
+        <div class="detail-panel">
+          <header class="detail-header"><div><p class="eyebrow">Detail</p><h2 id="detailName">-</h2></div><button class="panel-toggle" id="closeDetail" type="button">X</button></header>
+          <div class="detail-body">
+            <div class="upload-row"><label class="upload-button" for="detailImageUpload"><i class="fa-solid fa-image"></i><span>Upload</span></label><input id="detailImageUpload" class="visually-hidden" type="file" accept="image/*"></div>
+            <div class="detail-photo-grid" id="detailPhotos"></div>
+            <dl class="detail-list">
+              <dt>ประเภทงาน</dt><dd id="detailType">-</dd>
+              <dt>GPS Pin</dt><dd id="detailGps">-</dd>
+              <dt>ขอบเขต</dt><dd id="detailBoundary">-</dd>
+              <dt>Timestamp</dt><dd id="detailTimestamp">-</dd>
+              <dt>เริ่มงาน</dt><dd id="detailStart">-</dd>
+              <dt>สิ้นสุดงาน</dt><dd id="detailEnd">-</dd>
+              <dt>สถานะ</dt><dd id="detailStatus">-</dd>
+              <dt>อัปเดต</dt><dd id="detailStatusNote">-</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="reports-panel map-ui" id="reportsPanel" aria-hidden="true">
+        <header class="detail-header"><div><p class="eyebrow">Reports</p><h2>Citizen Reports</h2></div><button class="panel-toggle" id="closeReports" type="button">X</button></header>
+        <div class="reports-body">
+          <form class="report-form" id="reportForm">
+            <div class="field-grid compact">
+              <label><span>ประเภท</span><select id="reportType"><option value="Construction">Construction</option><option value="Road Damage">Road Damage</option><option value="Accident">Accident</option><option value="Traffic">Traffic</option><option value="Other">Other</option></select></label>
+              <label><span>ชื่อ</span><input id="reporterName" type="text" value="Demo Reporter"></label>
+            </div>
+            <label><span>หัวข้อ</span><input id="reportTitle" type="text" placeholder="หัวข้อรายงาน"></label>
+            <label><span>รายละเอียด</span><textarea id="reportDescription" rows="2" placeholder="รายละเอียด"></textarea></label>
+            <div class="field-grid compact">
+              <label><span>Lat</span><input id="reportLat" type="number" step="0.000001"></label>
+              <label><span>Lng</span><input id="reportLng" type="number" step="0.000001"></label>
+            </div>
+            <div class="report-location-actions">
+              <button class="secondary-action" id="selectReportLocation" type="button"><i class="fa-solid fa-map-pin"></i><span>Pick</span></button>
+              <button class="secondary-action" id="useReportCurrentLocation" type="button"><i class="fa-solid fa-location-crosshairs"></i><span>GPS</span></button>
+            </div>
+            <label><span>รูป</span><input id="reportImage" type="file" accept="image/*"></label>
+            <img class="report-image-preview" id="reportImagePreview" alt="Preview">
+            <label><span>เวลา</span><input id="reportTimestamp" type="datetime-local"></label>
+            <button class="primary-action" type="submit">Submit</button>
+          </form>
+          <section class="report-list-section">
+            <div class="report-list-header"><strong>Report List</strong><button class="secondary-action small" id="createReportButton" type="button">Create</button></div>
+            <div class="report-list" id="reportList"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</BaseLayout>

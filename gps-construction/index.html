@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GPS Construction Platform</title>
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Project list">
+        <header class="brand-panel">
+          <div>
+            <p class="eyebrow">Thailand Construction GPS</p>
+            <h1>โครงการก่อสร้าง</h1>
+          </div>
+          <button class="icon-button mobile-close" id="closeSidebar" aria-label="Close project list">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            <span class="button-symbol">X</span>
+          </button>
+        </header>
+
+        <section class="summary-grid" aria-label="Project summary">
+          <div class="summary-item">
+            <span id="totalProjects">0</span>
+            <small>Projects</small>
+          </div>
+          <div class="summary-item">
+            <span id="activeProjects">0</span>
+            <small>Active</small>
+          </div>
+          <div class="summary-item">
+            <span id="delayedProjects">0</span>
+            <small>Delayed</small>
+          </div>
+        </section>
+
+        <div class="filter-row" role="tablist" aria-label="Filter projects">
+          <button class="filter-chip active" data-filter="all" type="button">All</button>
+          <button class="filter-chip" data-filter="in-progress" type="button">Progress</button>
+          <button class="filter-chip" data-filter="delayed" type="button">Delayed</button>
+          <button class="filter-chip" data-filter="planned" type="button">Planned</button>
+        </div>
+
+        <section class="project-list" id="projectList" aria-label="Construction projects"></section>
+      </aside>
+
+      <main class="map-workspace">
+        <div class="top-bar map-ui">
+          <button class="icon-button sidebar-toggle" id="openSidebar" aria-label="Open project list">
+            <i class="fa-solid fa-list" aria-hidden="true"></i>
+            <span class="button-symbol">List</span>
+          </button>
+
+          <form class="search-box" id="searchForm" role="search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input id="searchInput" type="search" placeholder="ค้นหาโครงการ ถนน จังหวัด หรือผู้รับเหมา" autocomplete="off">
+            <button class="search-submit" type="submit">Search</button>
+          </form>
+
+          <button class="icon-button" id="locateButton" aria-label="Use current location" title="Current location">
+            <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
+            <span class="button-symbol">GPS</span>
+          </button>
+        </div>
+
+        <div id="map" aria-label="Interactive Thailand construction map"></div>
+
+        <section class="route-panel tool-panel map-ui" aria-label="Route planner">
+          <header class="tool-header">
+            <div>
+              <p class="eyebrow">Route Planner</p>
+              <h2>คำนวณเส้นทาง</h2>
+            </div>
+            <button class="panel-toggle" id="toggleRoutePanel" type="button" aria-label="Toggle route planner">-</button>
+          </header>
+
+          <div class="tool-body" id="routePanelBody">
+            <div class="field-grid">
+              <label>
+                <span>ที่อยู่ปัจจุบัน / ต้นทาง</span>
+                <input id="originInput" list="addressOptions" type="text" placeholder="เช่น Central Ladprao หรือ 13.8164, 100.5616" autocomplete="off">
+              </label>
+              <label>
+                <span>จุดหมาย</span>
+                <input id="destinationInput" list="addressOptions" type="text" placeholder="เช่น Min Buri Market หรือ Don Mueang Airport" autocomplete="off">
+              </label>
+              <datalist id="addressOptions"></datalist>
+            </div>
+            <div class="route-action-row">
+              <button class="primary-action" id="calculateRoute" type="button">Calculate</button>
+              <button class="secondary-action" id="driveRoute" type="button">
+                <i class="fa-solid fa-car-side" aria-hidden="true"></i>
+                <span>Drive</span>
+              </button>
+            </div>
+            <div class="drive-control-row">
+              <label>
+                <span>Simulation Speed</span>
+                <select id="driveSpeed">
+                  <option value="1">1x</option>
+                  <option value="2">2x</option>
+                  <option value="5">5x</option>
+                  <option value="10">10x</option>
+                  <option value="20">20x</option>
+                </select>
+              </label>
+              <div class="drive-readout" id="driveReadout" aria-live="polite">
+                <strong>Ready</strong>
+                <span>Distance and ETA appear during drive.</span>
+              </div>
+            </div>
+
+            <div class="route-summary" id="routeSummary">
+              <p>ใส่ต้นทางและจุดหมาย ระบบจะวาดเส้นทางตามถนนและแจ้งเตือนเมื่องานก่อสร้างอยู่บนถนนที่ต้องผ่าน</p>
+            </div>
+
+            <div class="travel-modes" id="travelModes" aria-label="Travel mode estimates"></div>
+
+            <div class="avoidance-box" id="avoidanceBox">
+              <strong>คำแนะนำเส้นทาง</strong>
+              <p>ระบบจะแสดงคำแนะนำเมื่อถนนในเส้นทางผ่านจุดก่อสร้างที่กำลังดำเนินการหรือล่าช้า</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="construction-panel tool-panel map-ui" aria-label="Add construction work">
+          <header class="tool-header">
+            <div>
+              <p class="eyebrow">Construction Data</p>
+              <h2>เพิ่มงานก่อสร้าง</h2>
+            </div>
+            <button class="panel-toggle" id="toggleConstructionPanel" type="button" aria-label="Toggle construction form">-</button>
+          </header>
+
+          <div class="tool-body" id="constructionPanelBody">
+            <label>
+              <span>ชื่องาน</span>
+              <input id="constructionName" type="text" placeholder="เช่น ปรับผิวจราจรช่วงทางแยก">
+            </label>
+            <div class="field-grid compact">
+              <label>
+                <span>ประเภทงาน</span>
+                <select id="constructionType">
+                  <option value="Road resurfacing">Road resurfacing</option>
+                  <option value="Drainage">Drainage</option>
+                  <option value="Utility relocation">Utility relocation</option>
+                  <option value="Bridge repair">Bridge repair</option>
+                  <option value="Signal upgrade">Signal upgrade</option>
+                </select>
+              </label>
+              <label>
+                <span>สถานะ</span>
+                <select id="constructionStatus">
+                  <option value="in-progress">In Progress</option>
+                  <option value="delayed">Delayed</option>
+                  <option value="planned">Planned</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>ถนน / Corridor</span>
+              <select id="constructionRoad"></select>
+            </label>
+            <div class="field-grid compact">
+              <label>
+                <span>Latitude</span>
+                <input id="constructionLat" type="number" step="0.000001" placeholder="13.858400">
+              </label>
+              <label>
+                <span>Longitude</span>
+                <input id="constructionLng" type="number" step="0.000001" placeholder="100.643500">
+              </label>
+            </div>
+            <div class="field-grid compact">
+              <label>
+                <span>เริ่มงาน</span>
+                <input id="constructionStart" type="datetime-local">
+              </label>
+              <label>
+                <span>สิ้นสุดงาน</span>
+                <input id="constructionEnd" type="datetime-local">
+              </label>
+            </div>
+            <div class="field-grid compact">
+              <label>
+                <span>Timestamp</span>
+                <input id="constructionTimestamp" type="datetime-local">
+              </label>
+              <label>
+                <span>ขอบเขต (เมตร)</span>
+                <input id="constructionBoundary" type="number" min="40" max="900" step="10" value="280">
+              </label>
+            </div>
+            <div class="field-grid compact">
+              <label>
+                <span>รูปพื้นที่</span>
+                <select id="constructionPhotoTheme">
+                  <option value="black-red-white">Black / Red / White</option>
+                  <option value="green-yellow-white">Green / Yellow / White</option>
+                  <option value="red-yellow-black">Red / Yellow / Black</option>
+                  <option value="white-green-black">White / Green / Black</option>
+                </select>
+              </label>
+              <label>
+                <span>อัปเดตสถานะ</span>
+                <input id="constructionStatusNote" type="text" placeholder="เช่น ปิด 1 ช่องจราจร">
+              </label>
+            </div>
+            <button class="primary-action" id="addConstruction" type="button">Add on Map</button>
+          </div>
+        </section>
+
+        <div class="map-controls map-ui" aria-label="Map controls">
+          <button class="control-button" id="zoomIn" type="button" aria-label="Zoom in">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            <span class="button-symbol">+</span>
+          </button>
+          <button class="control-button" id="zoomOut" type="button" aria-label="Zoom out">
+            <i class="fa-solid fa-minus" aria-hidden="true"></i>
+            <span class="button-symbol">-</span>
+          </button>
+          <button class="control-button" id="recenter" type="button" aria-label="Recenter Thailand">
+            <i class="fa-solid fa-crosshairs" aria-hidden="true"></i>
+            <span class="button-symbol">C</span>
+          </button>
+        </div>
+
+        <div class="fab-stack map-ui" aria-label="Map actions">
+          <button class="fab-button" id="placePinButton" type="button" aria-label="Place pin" title="Place pin">
+            <i class="fa-solid fa-thumbtack" aria-hidden="true"></i>
+          </button>
+          <button class="fab-button report-fab" id="createReportFab" type="button" aria-label="Create report" title="Create report">
+            <i class="fa-solid fa-flag" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <section class="legend map-ui" aria-label="Status legend">
+          <div><span class="legend-dot completed"></span>Completed</div>
+          <div><span class="legend-dot in-progress"></span>In Progress</div>
+          <div><span class="legend-dot delayed"></span>Delayed</div>
+          <div><span class="legend-dot planned"></span>Planned</div>
+        </section>
+
+        <nav class="bottom-nav map-ui" aria-label="Primary navigation">
+          <button class="nav-item active" type="button" data-nav="home">
+            <i class="fa-solid fa-house" aria-hidden="true"></i>
+            <span>Home</span>
+          </button>
+          <button class="nav-item" type="button" data-nav="alerts">
+            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+            <span>Alerts</span>
+          </button>
+          <button class="nav-item" type="button" data-nav="ai">
+            <i class="fa-solid fa-brain" aria-hidden="true"></i>
+            <span>AI</span>
+          </button>
+          <button class="nav-item" type="button" data-nav="reports">
+            <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+            <span>Reports</span>
+          </button>
+          <button class="nav-item" type="button" data-nav="admin">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <span>Admin</span>
+          </button>
+        </nav>
+
+        <div class="toast map-ui" id="toast" role="status" aria-live="polite"></div>
+
+        <section class="detail-modal map-ui" id="detailModal" aria-label="Construction detail" aria-hidden="true">
+          <div class="detail-panel">
+            <header class="detail-header">
+              <div>
+                <p class="eyebrow">Construction Detail</p>
+                <h2 id="detailName">-</h2>
+              </div>
+              <button class="panel-toggle" id="closeDetail" type="button" aria-label="Close detail">X</button>
+            </header>
+            <div class="detail-body">
+              <div class="upload-row">
+                <label class="upload-button" for="detailImageUpload">
+                  <i class="fa-solid fa-image" aria-hidden="true"></i>
+                  <span>Upload Image</span>
+                </label>
+                <input id="detailImageUpload" class="visually-hidden" type="file" accept="image/*">
+              </div>
+              <div class="detail-photo-grid" id="detailPhotos"></div>
+              <dl class="detail-list">
+                <dt>ประเภทงาน</dt><dd id="detailType">-</dd>
+                <dt>GPS Pin</dt><dd id="detailGps">-</dd>
+                <dt>ขอบเขต</dt><dd id="detailBoundary">-</dd>
+                <dt>Timestamp</dt><dd id="detailTimestamp">-</dd>
+                <dt>เริ่มงาน</dt><dd id="detailStart">-</dd>
+                <dt>สิ้นสุดงาน</dt><dd id="detailEnd">-</dd>
+                <dt>สถานะ</dt><dd id="detailStatus">-</dd>
+                <dt>อัปเดตสถานะ</dt><dd id="detailStatusNote">-</dd>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <section class="reports-panel map-ui" id="reportsPanel" aria-label="Reports" aria-hidden="true">
+          <header class="detail-header">
+            <div>
+              <p class="eyebrow">Reports</p>
+              <h2>Construction Reports</h2>
+            </div>
+            <button class="panel-toggle" id="closeReports" type="button" aria-label="Close reports">X</button>
+          </header>
+          <div class="reports-body">
+            <form class="report-form" id="reportForm">
+              <div class="field-grid compact">
+                <label>
+                  <span>ประเภทเหตุการณ์</span>
+                  <select id="reportType">
+                    <option value="Construction">Construction</option>
+                    <option value="Road Damage">Road Damage</option>
+                    <option value="Accident">Accident</option>
+                    <option value="Traffic">Traffic</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+                <label>
+                  <span>ชื่อผู้รายงาน</span>
+                  <input id="reporterName" type="text" value="Demo Reporter">
+                </label>
+              </div>
+              <label>
+                <span>หัวข้อรายงาน</span>
+                <input id="reportTitle" type="text" placeholder="เช่น พบงานก่อสร้างกีดขวางช่องทาง">
+              </label>
+              <label>
+                <span>รายละเอียด</span>
+                <textarea id="reportDescription" rows="3" placeholder="ระบุรายละเอียดเหตุการณ์"></textarea>
+              </label>
+              <div class="field-grid compact">
+                <label>
+                  <span>Latitude</span>
+                  <input id="reportLat" type="number" step="0.000001" placeholder="13.756300">
+                </label>
+                <label>
+                  <span>Longitude</span>
+                  <input id="reportLng" type="number" step="0.000001" placeholder="100.501800">
+                </label>
+              </div>
+              <div class="report-location-actions">
+                <button class="secondary-action" id="selectReportLocation" type="button">
+                  <i class="fa-solid fa-map-pin" aria-hidden="true"></i>
+                  <span>Pick on Map</span>
+                </button>
+                <button class="secondary-action" id="useReportCurrentLocation" type="button">
+                  <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
+                  <span>Current Location</span>
+                </button>
+              </div>
+              <label>
+                <span>รูปภาพ</span>
+                <input id="reportImage" type="file" accept="image/*">
+              </label>
+              <img class="report-image-preview" id="reportImagePreview" alt="Report image preview">
+              <label>
+                <span>วันที่และเวลา</span>
+                <input id="reportTimestamp" type="datetime-local">
+              </label>
+              <button class="primary-action" type="submit">Submit Report</button>
+            </form>
+
+            <section class="report-list-section" aria-label="Submitted reports">
+              <div class="report-list-header">
+                <strong>Report List</strong>
+                <button class="secondary-action small" id="createReportButton" type="button">Create Report</button>
+              </div>
+              <div class="report-list" id="reportList"></div>
+            </section>
+          </div>
+        </section>
+        <section class="ai-panel map-ui" id="aiPanel" aria-label="AI Compliance Auditor" aria-hidden="true">
+          <header class="detail-header">
+            <div>
+              <p class="eyebrow">AI Construction Auditor</p>
+              <h2>ตรวจสอบมาตรฐานหน้างาน</h2>
+            </div>
+            <button class="panel-toggle" id="closeAiPanel" type="button" aria-label="Close AI panel">X</button>
+          </header>
+          <div class="ai-body">
+            <div class="ai-upload-area" id="aiUploadArea">
+              <i class="fa-solid fa-camera fa-3x"></i>
+              <p>อัปโหลดรูปถ่ายหน้างานเพื่อตรวจสอบมาตรฐาน</p>
+              <label class="upload-button" for="aiImageUpload">
+                <i class="fa-solid fa-image"></i>
+                <span>เลือกรูปถ่าย</span>
+              </label>
+              <input id="aiImageUpload" class="visually-hidden" type="file" accept="image/*">
+              <img class="ai-preview" id="aiPreview" alt="Preview" hidden>
+            </div>
+
+            <div class="ai-scenario-select">
+              <label>
+                <span>เลือกโครงการที่จะตรวจ</span>
+                <select id="aiZoneSelect"></select>
+              </label>
+              <label>
+                <span>เลือก scenario จำลอง (POC)</span>
+                <select id="aiScenario">
+                  <option value="pass">✅ ผ่านมาตรฐาน (กรวย 12 ชิ้น, ป้ายเตือน, ไฟ 5 จุด)</option>
+                  <option value="fail">❌ ไม่ผ่าน (กรวย 4 ชิ้น, ไม่มีป้าย, ไฟ 1 จุด)</option>
+                  <option value="critical">🔴 ไม่ผ่านร้ายแรง (ไม่มีอุปกรณ์ความปลอดภัยเลย)</option>
+                </select>
+              </label>
+            </div>
+
+            <button class="primary-action ai-audit-btn" id="runAiAudit" type="button">
+              <i class="fa-solid fa-magnifying-glass-chart"></i>
+              ตรวจสอบมาตรฐาน
+            </button>
+
+            <div class="ai-loading" id="aiLoading" hidden>
+              <div class="spinner"></div>
+              <p>กำลังวิเคราะห์ภาพด้วย AI...</p>
+            </div>
+
+            <div class="ai-results" id="aiResults" hidden>
+              <div class="ai-verdict" id="aiVerdict"></div>
+              <div class="ai-score-gauge" id="aiScoreGauge"></div>
+              <div class="ai-detected" id="aiDetected"></div>
+              <div class="ai-rules" id="aiRules"></div>
+              <div class="ai-recommendations" id="aiRecommendations"></div>
+              <div class="ai-hash" id="aiHash"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-panel map-ui" id="adminPanel" aria-label="DOH Admin" aria-hidden="true">
+          <header class="detail-header">
+            <div>
+              <p class="eyebrow">DOH Admin</p>
+              <h2>เจ้าหน้าที่กรมทางหลวง</h2>
+            </div>
+            <button class="panel-toggle" id="closeAdminPanel" type="button" aria-label="Close admin panel">X</button>
+          </header>
+          <div class="admin-body">
+            <div class="admin-tabs">
+              <button class="admin-tab-btn active" data-admin-tab="queue" type="button">คิวอนุมัติ</button>
+              <button class="admin-tab-btn" data-admin-tab="feedback" type="button">Feedback</button>
+              <button class="admin-tab-btn" data-admin-tab="kpi" type="button">KPI</button>
+            </div>
+            <div class="admin-tab-content" id="adminQueue">
+              <div id="adminQueueList"></div>
+            </div>
+            <div class="admin-tab-content" id="adminFeedback" hidden>
+              <div id="adminFeedbackList"></div>
+            </div>
+            <div class="admin-tab-content" id="adminKpi" hidden>
+              <div id="adminKpiList"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/ai-auditor.js"></script>
+    <script src="js/alerts.js"></script>
+    <script src="js/feedback.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/script.js"></script>
+  </body>
+</html>
