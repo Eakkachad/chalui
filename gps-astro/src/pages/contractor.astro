@@ -46,7 +46,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
         <div class="card">
           <h3><i class="fa-solid fa-camera"></i> รูปถ่ายหน้างาน</h3>
-          <label><span>อัปโหลดรูป (สำหรับส่งตรวจ AI)</span><input id="contractorPhoto" type="file" accept="image/*"></label>
+          <p style="font-size:0.82rem;color:#68746f;margin-bottom:12px">ถ่ายรูปสภาพหน้างานเพื่อส่งตรวจ AI</p>
+          <div class="photo-upload-area">
+            <label class="camera-button" for="contractorPhoto">
+              <i class="fa-solid fa-camera"></i>
+              <span>ถ่ายรูป</span>
+            </label>
+            <label class="gallery-button" for="contractorPhoto">
+              <i class="fa-solid fa-images"></i>
+              <span>เลือกรูป</span>
+            </label>
+            <input id="contractorPhoto" class="visually-hidden" type="file" accept="image/*" capture="environment">
+          </div>
           <img id="contractorPhotoPreview" alt="preview" style="display:none;width:100%;border-radius:12px;margin-top:10px;max-height:200px;object-fit:cover">
         </div>
 

@@ -792,6 +792,144 @@ select:focus,
   background: var(--blue);
 }
 
+/* ─── Dangerous Zone: failed compliance — red pulse + larger ─── */
+.status-dangerous {
+  background: var(--red);
+  width: 36px;
+  height: 36px;
+  animation: dangerPulse 1s ease-in-out infinite;
+  border-color: #fff200;
+  box-shadow: 0 0 16px 4px rgba(223, 74, 67, 0.6), 0 8px 18px rgba(23, 32, 28, 0.28);
+}
+
+@keyframes dangerPulse {
+  0%, 100% { transform: rotate(-45deg) scale(1); box-shadow: 0 0 16px 4px rgba(223, 74, 67, 0.6); }
+  50% { transform: rotate(-45deg) scale(1.15); box-shadow: 0 0 24px 8px rgba(223, 74, 67, 0.9); }
+}
+
+/* ─── Danger Alert Banner (failed compliance proximity) ─── */
+.danger-alert {
+  background: linear-gradient(135deg, #7f1d1d, #dc2626) !important;
+  border-left: 5px solid #fbbf24 !important;
+  animation: dangerBannerPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dangerBannerPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4); }
+  50% { box-shadow: 0 4px 30px rgba(220, 38, 38, 0.8); }
+}
+
+/* ─── Photo Upload Area (Camera + Gallery buttons) ─── */
+.photo-upload-area {
+  display: flex;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.camera-button,
+.gallery-button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 200ms;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.camera-button {
+  background: var(--teal);
+  color: #fff;
+  border: 2px solid var(--teal);
+}
+
+.camera-button:hover {
+  background: #178080;
+}
+
+.camera-button i {
+  font-size: 1.4rem;
+}
+
+.gallery-button {
+  background: var(--panel-strong);
+  color: var(--text);
+  border: 2px solid var(--line);
+}
+
+.gallery-button:hover {
+  background: var(--line);
+}
+
+.gallery-button i {
+  font-size: 1.4rem;
+  color: var(--teal);
+}
+
+/* ─── Human-in-the-loop: Admin validation UI ─── */
+.ai-accuracy-banner {
+  background: linear-gradient(135deg, #1e3a5f, #2c5282);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.queue-section-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 14px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ai-conf-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.review-card.low-conf {
+  border-left: 4px solid #ef4444;
+  background: #fef2f2;
+}
+
+.confirm-btn,
+.override-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.confirm-btn {
+  background: var(--green);
+  color: #fff;
+}
+
+.confirm-btn:hover {
+  background: #1a8544;
+}
+
+.override-btn {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.override-btn:hover {
+  background: #fde68a;
+}
+
 .user-location {
   background: var(--teal);
 }

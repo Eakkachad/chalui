@@ -78,6 +78,9 @@ function checkProximity(userLat, userLng) {
 
 // ─── Trigger a driver alert ───
 function triggerAlert(zone, distanceM) {
+  // Check if zone failed compliance — if so, this is a DANGER alert
+  const isDangerous = zone.isDangerous || zone.complianceVerdict === 'fail';
+
   const alert = {
     id: `alert-${Date.now()}-${zone.id}`,
     zoneId: zone.id,
@@ -87,7 +90,8 @@ function triggerAlert(zone, distanceM) {
     speedLimit: zone.speedLimit || 60,
     distanceM: Math.round(distanceM),
     triggeredAt: new Date().toISOString(),
-    dismissed: false
+    dismissed: false,
+    isDangerous
   };
 
   // Add to history (newest first)
@@ -96,7 +100,7 @@ function triggerAlert(zone, distanceM) {
   // Show alert UI
   showAlertBanner(alert);
 
-  console.log(`[Alert] 🚧 ${zone.name} — ${Math.round(distanceM)}m away`);
+  console.log(`[Alert] ${isDangerous ? '🚨 DANGER' : '🚧'} ${zone.name} — ${Math.round(distanceM)}m away`);
 }
 
 // ─── Alert banner UI ───
@@ -109,18 +113,27 @@ function showAlertBanner(alert) {
   }
 
   const banner = document.createElement('div');
-  banner.className = 'driver-alert-banner';
+  banner.className = `driver-alert-banner ${alert.isDangerous ? 'danger-alert' : ''}`;
+  
+  const headerIcon = alert.isDangerous ? '🚨' : '⚠️';
+  const headerText = alert.isDangerous 
+    ? `🚨 อันตราย! งานก่อสร้างไม่ผ่านมาตรฐาน — ${alert.distanceM} ม. ข้างหน้า`
+    : `🚧 งานก่อสร้างข้างหน้า ${alert.distanceM} ม.`;
+  const subText = alert.isDangerous 
+    ? 'พื้นที่นี้ไม่ผ่านการตรวจสอบมาตรฐานความปลอดภัย — กรมทางหลวงแจ้งลงตรวจแล้ว'
+    : 'กรุณาลดความเร็วและขับขี่ด้วยความระมัดระวัง';
+
   banner.innerHTML = `
-    <div class="alert-icon">⚠️</div>
+    <div class="alert-icon">${headerIcon}</div>
     <div class="alert-content">
-      <strong>🚧 งานก่อสร้างข้างหน้า ${alert.distanceM} ม.</strong>
+      <strong>${headerText}</strong>
       <p>${alert.projectName}</p>
       <div class="alert-details">
         <span>🛣️ ${alert.roadName}</span>
         <span>🚗 จำกัด ${alert.speedLimit} กม./ชม.</span>
         <span>🚧 ${alert.closedLanes}</span>
       </div>
-      <small>กรุณาลดความเร็วและขับขี่ด้วยความระมัดระวัง</small>
+      <small>${subText}</small>
     </div>
     <button class="alert-dismiss" aria-label="ปิด">✕</button>
   `;
@@ -136,13 +149,14 @@ function showAlertBanner(alert) {
   // Animate in
   requestAnimationFrame(() => banner.classList.add('alert-visible'));
 
-  // Auto-dismiss after 6s
+  // Auto-dismiss (danger alerts stay longer)
+  const dismissTime = alert.isDangerous ? 10000 : ALERT_DISPLAY_MS;
   setTimeout(() => {
     if (banner.parentNode) {
       banner.classList.remove('alert-visible');
       setTimeout(() => banner.remove(), 300);
     }
-  }, ALERT_DISPLAY_MS);
+  }, dismissTime);
 }
 
 // ─── Start watching position ───

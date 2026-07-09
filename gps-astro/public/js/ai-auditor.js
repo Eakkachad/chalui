@@ -238,10 +238,18 @@ async function runComplianceAudit(scene, zoneLengthM = 30) {
   const reportContent = JSON.stringify(ruleResults);
   const reportHash = await computeAuditHash(reportContent);
 
+  // ─── AI Confidence: how sure is the AI about this verdict? ───
+  // Combines: (1) vision scene confidence, (2) verdict decisiveness (distance from borderline 50)
+  // Low confidence = admin should look carefully. High = admin can quick-confirm.
+  const sceneConf = scene.sceneConfidence || 0.85;
+  const decisiveness = Math.abs(score - 50) / 50; // 0 = borderline (uncertain), 1 = extreme (certain)
+  const aiConfidence = Math.round((sceneConf * 0.5 + decisiveness * 0.5) * 100);
+
   return {
     reportId: `CR-${reportHash.slice(0, 8)}`,
     overallStatus,
     overallScore: score,
+    aiConfidence,
     ruleResults,
     recommendations,
     reportHash,
@@ -308,7 +316,11 @@ function renderVerdict(report) {
     critical_fail: '🔴 ไม่ผ่าน — ต้องหยุดงานทันที'
   };
   el.className = `ai-verdict verdict-${isPass ? 'pass' : 'fail'}`;
-  el.innerHTML = `<h3>${statusLabels[report.overallStatus]}</h3>`;
+  const conf = report.aiConfidence != null ? report.aiConfidence : null;
+  const confNote = conf != null
+    ? `<p style="font-size:0.8rem;margin:4px 0 0;opacity:0.85">🎯 AI มั่นใจ ${conf}% — ผลนี้เป็นข้อเสนอแนะ ต้องให้เจ้าหน้าที่ ทล. ยืนยัน</p>`
+    : '';
+  el.innerHTML = `<h3>${statusLabels[report.overallStatus]}</h3>${confNote}`;
 }
 
 function renderScoreGauge(report) {
@@ -411,16 +423,29 @@ function applyComplianceVerdict(report, targetZoneId) {
 
   const isPass = report.overallStatus === 'pass' || report.overallStatus === 'pass_with_warnings';
   
-  // Update zone compliance state
-  zone.complianceVerdict = isPass ? 'pass' : 'fail';
+  // ─── AI PROPOSES (human-in-the-loop) ───
+  // AI's verdict is ADVISORY. The final decision requires admin validation.
+  zone.aiVerdict = isPass ? 'pass' : 'fail';        // what AI said (never overwritten)
+  zone.aiConfidence = report.aiConfidence;           // how sure AI is (0-100)
+  zone.aiScore = report.overallScore;
   zone.complianceReportId = report.reportId;
   zone.complianceScore = report.overallScore;
-  zone.publishedToDrivers = isPass;
   zone.lastAuditAt = report.inspectedAt;
 
-  // If fail, keep it as planned (not visible to drivers)
-  if (!isPass && zone.status === 'in-progress') {
-    zone.status = 'planned'; // demote back to planned until fixed
+  // Admin has NOT validated yet → status = pending review
+  zone.adminDecision = 'pending';                    // 'pending' | 'confirmed' | 'overridden'
+  zone.verified = false;                             // becomes true only after admin acts
+  zone.aiWasWrong = false;
+
+  // Tentative state (shown to public with "unverified" badge until admin confirms)
+  zone.complianceVerdict = zone.aiVerdict;
+  zone.publishedToDrivers = true;                    // ALWAYS visible — failed zones need MORE visibility
+  zone.isDangerous = !isPass;                        // tentative danger flag
+
+  // If AI says fail → pre-flag for DOH inspection (admin will confirm)
+  if (!isPass) {
+    zone.needsDohInspection = true;
+    zone.dohAlertSent = new Date().toISOString();
   }
 
   // Re-render map markers (only published zones show to drivers)
@@ -434,31 +459,171 @@ function applyComplianceVerdict(report, targetZoneId) {
   // Persist so the verdict survives a page refresh
   persistComplianceState();
 
+  // ─── Cross-Tab Sync: Broadcast verdict to other tabs (Traveler ↔ Admin) ───
+  try {
+    if (window._complianceChannel) {
+      const state = {};
+      projects.forEach(p => {
+        if (p.complianceVerdict !== undefined || p.publishedToDrivers !== undefined) {
+          state[p.id] = {
+            complianceVerdict: p.complianceVerdict,
+            publishedToDrivers: p.publishedToDrivers,
+            complianceScore: p.complianceScore,
+            complianceReportId: p.complianceReportId,
+            status: p.status,
+            rejectReason: p.rejectReason,
+            needsReaudit: p.needsReaudit
+          };
+        }
+      });
+      window._complianceChannel.postMessage({ type: "compliance-update", state });
+      console.log("[Sync] Broadcast compliance update to other tabs");
+    }
+  } catch (e) {
+    // BroadcastChannel may not exist yet during early init
+  }
+
   // Show toast notification
   const msg = isPass 
-    ? `✅ ${zone.name} — ผ่านมาตรฐาน เผยแพร่ต่อผู้ขับขี่แล้ว`
-    : `❌ ${zone.name} — ไม่ผ่านมาตรฐาน ซ่อนจากผู้ขับขี่`;
+    ? `✅ ${zone.name} — ผ่านมาตรฐาน แสดงสถานะปกติต่อผู้ขับขี่`
+    : `🚨 ${zone.name} — ไม่ผ่านมาตรฐาน! แจ้งเตือนผู้ขับขี่ + ส่ง ทล. ลงตรวจ`;
   
   if (typeof showToast === 'function') {
     showToast(msg);
   }
 
-  console.log(`[Closed Loop] Zone "${zone.name}" verdict=${zone.complianceVerdict} published=${zone.publishedToDrivers}`);
+  console.log(`[Closed Loop] Zone "${zone.name}" verdict=${zone.complianceVerdict} dangerous=${zone.isDangerous} dohInspection=${zone.needsDohInspection}`);
 }
 
 /**
  * Check if a zone should be visible to drivers.
  * Used by the map layer to filter markers.
- * Zones that have failed compliance or are not yet audited (in planned state)
- * are hidden from the public driver view.
+ * 
+ * NEW LOGIC (2026-07-09): Failed zones are ALWAYS visible — they're MORE
+ * dangerous, so drivers need warnings. Only "planned" zones that haven't
+ * been submitted yet are hidden.
  */
 function isZonePublished(zone) {
   // Completed zones are always visible
   if (zone.status === 'completed') return true;
-  // If we have compliance data, respect it
-  if (zone.publishedToDrivers !== undefined) return zone.publishedToDrivers;
+  // Failed compliance = SHOW (dangerous — warn drivers!)
+  if (zone.complianceVerdict === 'fail') return true;
+  // Passed compliance = SHOW (verified safe)
+  if (zone.publishedToDrivers === true) return true;
   // Default: all existing zones are visible (backward compat with sample data)
   return true;
+}
+
+/**
+ * Check if a zone has failed compliance — used for special styling/alerts.
+ */
+function isZoneDangerous(zone) {
+  return zone.complianceVerdict === 'fail' && zone.status !== 'completed';
+}
+
+/**
+ * Check if a zone's verdict is admin-verified (vs AI-only tentative).
+ */
+function isZoneVerified(zone) {
+  return zone.verified === true;
+}
+
+// ─── HUMAN-IN-THE-LOOP: Admin validates AI verdict ───
+
+/**
+ * Admin CONFIRMS the AI verdict (agrees with AI).
+ * Fast path — one click when AI is obviously right.
+ */
+function adminConfirmVerdict(zoneId) {
+  const zone = typeof projects !== 'undefined' ? projects.find(p => p.id === zoneId) : null;
+  if (!zone) return;
+
+  zone.adminDecision = 'confirmed';
+  zone.verified = true;
+  zone.aiWasWrong = false;
+  zone.finalVerdict = zone.aiVerdict;
+  zone.complianceVerdict = zone.aiVerdict;
+  zone.isDangerous = zone.aiVerdict === 'fail';
+  zone.validatedBy = 'admin';
+  zone.validatedAt = new Date().toISOString();
+
+  finalizeVerdictSideEffects(zone,
+    `✅ ยืนยันตาม AI: ${zone.name} (${zone.aiVerdict === 'pass' ? 'ผ่าน' : 'ไม่ผ่าน'})`);
+}
+
+/**
+ * Admin OVERRIDES the AI verdict (AI got it wrong).
+ * This is the safety net — human is the accountable validator.
+ * @param {string} newVerdict - 'pass' | 'fail'
+ * @param {string} reason - why admin disagreed (audit trail)
+ */
+function adminOverrideVerdict(zoneId, newVerdict, reason) {
+  const zone = typeof projects !== 'undefined' ? projects.find(p => p.id === zoneId) : null;
+  if (!zone) return;
+
+  zone.adminDecision = 'overridden';
+  zone.verified = true;
+  zone.aiWasWrong = newVerdict !== zone.aiVerdict; // track AI accuracy
+  zone.finalVerdict = newVerdict;
+  zone.complianceVerdict = newVerdict;
+  zone.isDangerous = newVerdict === 'fail';
+  zone.needsDohInspection = newVerdict === 'fail';
+  zone.overrideReason = reason || '';
+  zone.validatedBy = 'admin';
+  zone.validatedAt = new Date().toISOString();
+
+  finalizeVerdictSideEffects(zone,
+    `✎ Override: ${zone.name} → ${newVerdict === 'pass' ? 'ผ่าน' : 'ไม่ผ่าน'} (AI ${zone.aiWasWrong ? 'ผิด' : 'ถูก'})`);
+}
+
+/**
+ * Shared side effects after a verdict is finalized (confirm or override):
+ * re-render, persist, broadcast to other tabs, toast.
+ */
+function finalizeVerdictSideEffects(zone, message) {
+  if (typeof renderAll === 'function') renderAll();
+  if (typeof renderMarkers === 'function') renderMarkers();
+  persistComplianceState();
+
+  // Broadcast to other tabs (Traveler updates instantly)
+  try {
+    if (window._complianceChannel) {
+      const state = {};
+      projects.forEach(p => {
+        if (p.complianceVerdict !== undefined || p.publishedToDrivers !== undefined) {
+          state[p.id] = {
+            complianceVerdict: p.complianceVerdict,
+            publishedToDrivers: p.publishedToDrivers,
+            complianceScore: p.complianceScore,
+            complianceReportId: p.complianceReportId,
+            status: p.status,
+            aiVerdict: p.aiVerdict,
+            adminDecision: p.adminDecision,
+            verified: p.verified,
+            isDangerous: p.isDangerous,
+            finalVerdict: p.finalVerdict
+          };
+        }
+      });
+      window._complianceChannel.postMessage({ type: "compliance-update", state });
+    }
+  } catch (e) { /* channel not ready */ }
+
+  if (typeof showToast === 'function') showToast(message);
+  console.log(`[Human-in-loop] ${message}`);
+}
+
+/**
+ * Get AI accuracy stats — how often admin agreed vs overrode AI.
+ * Used in KPI/dashboard to monitor AI reliability over time.
+ */
+function getAiAccuracyStats() {
+  if (typeof projects === 'undefined') return { validated: 0, agreed: 0, overridden: 0, accuracy: null };
+  const validated = projects.filter(p => p.verified === true);
+  const overridden = validated.filter(p => p.aiWasWrong === true);
+  const agreed = validated.length - overridden.length;
+  const accuracy = validated.length > 0 ? Math.round((agreed / validated.length) * 100) : null;
+  return { validated: validated.length, agreed, overridden: overridden.length, accuracy };
 }
 
 /**
@@ -499,7 +664,12 @@ function checkFeedbackReauditTrigger(zoneId, feedbackList) {
 window.AiAuditor = {
   runComplianceAudit,
   applyComplianceVerdict,
+  adminConfirmVerdict,
+  adminOverrideVerdict,
+  getAiAccuracyStats,
   isZonePublished,
+  isZoneDangerous,
+  isZoneVerified,
   checkFeedbackReauditTrigger,
   populateAuditZoneSelector,
   persistComplianceState,
@@ -600,4 +770,13 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAiAuditor);
 } else {
   initAiAuditor();
+}
+
+// ─── Initialize BroadcastChannel for cross-tab sync ───
+try {
+  if (!window._complianceChannel) {
+    window._complianceChannel = new BroadcastChannel("gps-compliance-sync");
+  }
+} catch (e) {
+  // BroadcastChannel not supported in this environment
 }

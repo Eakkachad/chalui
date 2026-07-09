@@ -160,7 +160,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <button class="secondary-action" id="selectReportLocation" type="button"><i class="fa-solid fa-map-pin"></i><span>Pick</span></button>
               <button class="secondary-action" id="useReportCurrentLocation" type="button"><i class="fa-solid fa-location-crosshairs"></i><span>GPS</span></button>
             </div>
-            <label><span>รูป</span><input id="reportImage" type="file" accept="image/*"></label>
+            <div class="photo-upload-area">
+              <label class="camera-button" for="reportImage">
+                <i class="fa-solid fa-camera"></i>
+                <span>ถ่ายรูป</span>
+              </label>
+              <label class="gallery-button" for="reportImage">
+                <i class="fa-solid fa-images"></i>
+                <span>เลือกรูป</span>
+              </label>
+              <input id="reportImage" class="visually-hidden" type="file" accept="image/*" capture="environment">
+            </div>
             <img class="report-image-preview" id="reportImagePreview" alt="Preview">
             <label><span>เวลา</span><input id="reportTimestamp" type="datetime-local"></label>
             <button class="primary-action" type="submit">Submit</button>

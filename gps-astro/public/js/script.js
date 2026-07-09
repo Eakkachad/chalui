@@ -883,6 +883,29 @@ function visibleProjects() {
 
 function popupTemplate(project) {
   const status = statuses[project.status];
+  
+  // KARC Forecast badge
+  let karcBadge = "";
+  if (typeof window.karcForecaster !== "undefined" && (project.status === "in-progress" || project.status === "delayed")) {
+    const pred = window.karcForecaster.forecast(project.id);
+    if (pred) {
+      const color = pred < 25 ? "#ef4444" : pred < 40 ? "#f59e0b" : "#22c55e";
+      karcBadge = `<dt>🔮 KARC Forecast</dt><dd style="color:${color}; font-weight:bold">${pred.toFixed(0)} กม./ชม.</dd>`;
+    }
+  }
+
+  // Compliance verification badge (human-in-the-loop transparency)
+  let verifyBadge = "";
+  if (project.aiVerdict) {
+    if (project.verified) {
+      const vLabel = project.finalVerdict === 'fail' ? '❌ ไม่ผ่าน' : '✅ ผ่าน';
+      const overrideNote = project.adminDecision === 'overridden' ? ' (ทล.แก้ผล)' : '';
+      verifyBadge = `<dt>สถานะตรวจสอบ</dt><dd style="font-weight:bold">✔️ ทล.ยืนยันแล้ว: ${vLabel}${overrideNote}</dd>`;
+    } else {
+      verifyBadge = `<dt>สถานะตรวจสอบ</dt><dd style="color:#f59e0b">⏳ AI ตรวจแล้ว รอ ทล.ยืนยัน</dd>`;
+    }
+  }
+
   return `
     <article class="project-popup">
       <h3>${displayBilingualText(project.name)}</h3>
@@ -894,6 +917,8 @@ function popupTemplate(project) {
         <dt>Contractor</dt><dd>${project.contractor}</dd>
         <dt>Start</dt><dd>${formatDate(project.start)}</dd>
         <dt>End</dt><dd>${formatDate(project.end)}</dd>
+        ${verifyBadge}
+        ${karcBadge}
       </dl>
       <a class="detail-button" href="#" data-detail="${project.id}">
         View Detail <i class="fa-solid fa-arrow-right"></i>
@@ -910,6 +935,16 @@ function createMarkerIcon(status) {
     iconSize: [32, 32],
     iconAnchor: [16, 32],
     popupAnchor: [0, -28]
+  });
+}
+
+function createDangerousMarkerIcon() {
+  return L.divIcon({
+    className: "",
+    html: `<div class="marker-pin status-dangerous"><i class="fa-solid fa-triangle-exclamation"></i><span>!</span></div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -32]
   });
 }
 
@@ -1135,9 +1170,18 @@ function updateDriveReadout(remainingKm, etaMinutes, speedFactor, isRunning) {
   if (!driveReadout) {
     return;
   }
+  // Show KARC forecast in readout if available
+  let karcInfo = "";
+  if (typeof window.karcForecaster !== "undefined" && isRunning) {
+    const pred = window.karcForecaster.forecast("route-current");
+    if (pred) {
+      const color = pred < 25 ? "#ef4444" : pred < 40 ? "#f59e0b" : "#22c55e";
+      karcInfo = `<br><span style="color:${color}">🔮 KARC: ${pred.toFixed(0)} กม./ชม.</span>`;
+    }
+  }
   driveReadout.innerHTML = `
     <strong>${isRunning ? `Driving ${speedFactor}x` : "Drive complete"}</strong>
-    <span>${Math.max(0, remainingKm).toFixed(1)} km left • ETA ${formatMinutes(Math.max(0, etaMinutes))}</span>
+    <span>${Math.max(0, remainingKm).toFixed(1)} km left • ETA ${formatMinutes(Math.max(0, etaMinutes))}${karcInfo}</span>
   `;
 }
 
@@ -1233,6 +1277,39 @@ function stepDriveSimulation(timestamp) {
   }
   updateDriveReadout(remainingKm, etaMinutes, driveState.speedFactor, remainingKm > 0.01);
 
+  // ─── KARC: Feed speed observations to forecaster during drive ───
+  if (typeof window.karcForecaster !== "undefined") {
+    // Simulate speed based on proximity to construction zones
+    let currentSpeed = driveState.realSpeedKmh;
+    const nearbyZones = projects.filter(p =>
+      (p.status === "in-progress" || p.status === "delayed") &&
+      haversineKm(position, p) < (p.radiusKm || 0.5)
+    );
+    if (nearbyZones.length > 0) {
+      // Slow down near construction — delayed zones worse
+      const penalty = nearbyZones.reduce((sum, z) => sum + (z.status === "delayed" ? 20 : 12), 0);
+      currentSpeed = Math.max(10, currentSpeed - penalty);
+    }
+    // Feed nearest zone observations
+    nearbyZones.forEach(zone => {
+      window.karcForecaster.observe(zone.id, currentSpeed);
+    });
+    // Also feed a general "route" observation
+    window.karcForecaster.observe("route-current", currentSpeed);
+
+    // Periodically fit the model (every ~2 seconds of real time)
+    if (!driveState._lastFitTime || (timestamp - driveState._lastFitTime) > 2000) {
+      driveState._lastFitTime = timestamp;
+      nearbyZones.forEach(zone => window.karcForecaster.fit(zone.id));
+      window.karcForecaster.fit("route-current");
+    }
+  }
+
+  // ─── Proximity Alert: trigger during drive simulation ───
+  if (typeof window.DriverAlerts !== "undefined" && window.DriverAlerts.checkProximity) {
+    window.DriverAlerts.checkProximity(position.lat, position.lng);
+  }
+
   if (remainingKm <= 0.01) {
     stopDriveSimulation("Drive simulation complete");
     return;
@@ -1289,8 +1366,14 @@ function renderLeafletMarkers() {
   markers.clear();
 
   for (const project of visibleProjects()) {
+    // Use dangerous marker icon for failed compliance zones
+    const isDangerous = typeof window.AiAuditor !== 'undefined' && window.AiAuditor.isZoneDangerous 
+      ? window.AiAuditor.isZoneDangerous(project) 
+      : false;
+    const icon = isDangerous ? createDangerousMarkerIcon() : createMarkerIcon(project.status);
+
     const marker = L.marker([project.lat, project.lng], {
-      icon: createMarkerIcon(project.status),
+      icon,
       title: project.name
     })
       .bindPopup(popupTemplate(project))
@@ -2275,15 +2358,21 @@ async function triggerThaiLLMQuery(userInput) {
   const query = userInput.toLowerCase();
   
   if (query.includes("รัชโยธิน") || query.includes("เกษตร")) {
-    const proj = projects.find(p => p.name.includes("รัชโยธิน") || p.roadName.includes("รัชโยธิน"));
+    const proj = projects.find(p => p.name.includes("รัชโยธิน") || p.roadName.includes("รัชโยธิน") || p.roadName.includes("พหลโยธิน"));
     let karcText = "";
-    if (proj && typeof window.karcForecaster !== "undefined") {
-      const pred = window.karcForecaster.forecast(proj.id);
+    if (typeof window.karcForecaster !== "undefined") {
+      // Try to get a real forecast from KARC
+      let pred = null;
+      if (proj) pred = window.karcForecaster.forecast(proj.id);
+      if (!pred) pred = window.karcForecaster.forecast("route-current");
       if (pred) {
-        karcText = `จากการคำนวณด้วยแบบจำลอง **KARC (Reservoir Computing)** บนเครื่องผู้ใช้ คาดว่าบริเวณรัชโยธินจะมีความเร็วลดลงเหลือ **${pred.toFixed(0)} กม./ชม.** มีดีเลย์สะสมราว **${Math.max(1, (10 - pred/10)).toFixed(0)} นาที**`;
+        const delay = Math.max(1, Math.round(60 / pred - 60 / 45));
+        karcText = `จากการคำนวณด้วยแบบจำลอง <strong>KARC (Kolmogorov-Arnold Reservoir Computing)</strong> แบบ real-time บน browser:<br>🔮 ความเร็วคาดการณ์: <strong>${pred.toFixed(0)} กม./ชม.</strong><br>⏱️ ดีเลย์สะสม: <strong>~${delay} นาที</strong><br>📊 ใช้ Chebyshev basis expansion K=4, M=4 + Ridge Regression`;
+      } else {
+        karcText = `KARC Forecaster พร้อมรอรับข้อมูล — กดปุ่ม "Drive" เพื่อเริ่มสะสมข้อมูลความเร็ว real-time แล้วระบบจะพยากรณ์ได้แม่นยำขึ้นครับ`;
       }
     }
-    return `<strong>[วิเคราะห์ แยกรัชโยธิน - เกษตร]</strong><br>${karcText || "พบพื้นที่ก่อสร้างปรับผิวจราจรพหลโยธิน"}<br>- แนะนำให้ใช้ถนนวิภาวดีรังสิตวิ่งขึ้นทางยกระดับอุตราภิมุขเพื่อเลี่ยงคอขวดครับ${routeStatus}`;
+    return `<strong>🧠 [วิเคราะห์ แยกรัชโยธิน - เกษตร]</strong><br>${karcText || "พบพื้นที่ก่อสร้างปรับผิวจราจรพหลโยธิน"}<br><br>💡 <strong>คำแนะนำ:</strong> ใช้ถนนวิภาวดีรังสิตวิ่งขึ้นทางยกระดับอุตราภิมุขเพื่อเลี่ยงคอขวดครับ${routeStatus}`;
   }
   
   if (query.includes("สุทธิสาร") || query.includes("สะพานควาย") || query.includes("วิภาวดี")) {
@@ -2301,11 +2390,19 @@ async function triggerThaiLLMQuery(userInput) {
       });
       const decomp = window.hodgeDecomposition.decomposeFlow(edgeFlows);
       const maxCoexact = Math.max(...decomp.coexact.map(Math.abs));
+      const maxExact = Math.max(...decomp.exact.map(Math.abs));
+      const maxHarmonic = Math.max(...decomp.harmonic.map(Math.abs));
+
+      hodgeText = `<strong>📐 Discrete Exterior Calculus (Hodge Decomposition):</strong><br>`;
+      hodgeText += `🔴 <strong>Exact (คอขวด/Gradient):</strong> ${maxExact.toFixed(1)} — แรงดันจราจรจากจุดก่อสร้าง<br>`;
+      hodgeText += `🟡 <strong>Coexact (ไหลวน/Rotational Loop):</strong> ${maxCoexact.toFixed(1)} — รถวนหาทาง/เลี่ยงในซอย<br>`;
+      hodgeText += `🟢 <strong>Harmonic (ทางผ่านหลัก/Transit):</strong> ${maxHarmonic.toFixed(1)} — กระแสหลักที่ไหลลื่น`;
+      
       if (maxCoexact > 12) {
-        hodgeText = `ระบบตรวจพบกระแสไหลวนจราจรติดสะสม **Coexact Flow (Rotational Loop)** สูงถึง **${maxCoexact.toFixed(1)}** รอบแยกสุทธิสาร/วิภาวดี ซึ่งมีรถสะสมไหลวนหาทางลัดในซอยค่อนข้างหนาแน่น`;
+        hodgeText += `<br><br>⚠️ <strong>ตรวจพบกระแสไหลวนสูง!</strong> รถสะสมวนในซอยย่อยรอบสุทธิสาร/วิภาวดี — หลีกเลี่ยงการเข้าซอย`;
       }
     }
-    return `<strong>[วิเคราะห์ แยกสุทธิสาร - วิภาวดี]</strong><br>${hodgeText || "การจราจรไหลเวียนปกติ"}<br>- แนะนำให้ใช้เส้นทางหลักวิภาวดีรังสิตซึ่งเป็น **Harmonic Flow (Global Corridor)** หลีกเลี่ยงการขับรถเข้าซอยย่อยเพื่อเลี่ยงรถวนสะสมครับ${routeStatus}`;
+    return `<strong>🧠 [วิเคราะห์ แยกสุทธิสาร - วิภาวดี]</strong><br>${hodgeText || "การจราจรไหลเวียนปกติ"}<br><br>💡 <strong>คำแนะนำ:</strong> ใช้เส้นทางหลักวิภาวดีรังสิต (Harmonic Flow — Global Corridor) หลีกเลี่ยงซอยย่อยที่มีจราจรวนสะสมครับ${routeStatus}`;
   }
 
   if (query.includes("ลาดพร้าว")) {
@@ -2432,6 +2529,42 @@ function init() {
   bindEvents();
   renderAll();
   renderReports();
+
+  // ─── Cross-Tab Closed Loop Sync (BroadcastChannel) ───
+  try {
+    window._complianceChannel = new BroadcastChannel("gps-compliance-sync");
+    window._complianceChannel.onmessage = (event) => {
+      const msg = event.data;
+      if (msg.type === "compliance-update" && msg.state) {
+        // Apply received compliance state to local projects
+        projects.forEach(p => {
+          if (msg.state[p.id]) {
+            Object.assign(p, msg.state[p.id]);
+          }
+        });
+        renderAll();
+        if (typeof renderMarkers === "function") renderMarkers();
+        console.log("[Sync] Cross-tab compliance update received");
+      }
+    };
+  } catch (e) {
+    console.warn("[Sync] BroadcastChannel not supported:", e.message);
+  }
+
+  // ─── KARC Seed: Pre-feed some observations so forecaster is ready ───
+  if (typeof window.karcForecaster !== "undefined") {
+    projects.forEach(p => {
+      if (p.status === "in-progress" || p.status === "delayed") {
+        const baseSpeed = p.status === "delayed" ? 25 : 35;
+        for (let i = 0; i < 6; i++) {
+          const jitter = (Math.random() - 0.5) * 8;
+          window.karcForecaster.observe(p.id, baseSpeed + jitter);
+        }
+        window.karcForecaster.fit(p.id);
+      }
+    });
+    console.log("[KARC] Pre-seeded forecaster for active zones");
+  }
 
   // Live Sync with Astro Backend (Phase 4)
   syncWithServer().then(() => {

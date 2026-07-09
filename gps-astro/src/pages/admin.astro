@@ -24,14 +24,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <h3><i class="fa-solid fa-magnifying-glass-chart"></i> ตรวจสอบมาตรฐานหน้างาน</h3>
           <div class="card-grid">
             <label><span>โครงการที่จะตรวจ</span><select id="aiZoneSelect"></select></label>
-            <label><span>รูปถ่ายหน้างาน</span>
-              <div class="ai-upload-area" id="aiUploadArea" style="padding:16px">
-                <i class="fa-solid fa-camera fa-2x"></i>
-                <label class="upload-button" for="aiImageUpload"><i class="fa-solid fa-image"></i><span>เลือกรูป</span></label>
-                <input id="aiImageUpload" class="visually-hidden" type="file" accept="image/*">
-                <img class="ai-preview" id="aiPreview" alt="Preview" hidden>
+            <div class="contractor-photo-display">
+              <span style="font-size:0.82rem;color:#68746f;display:block;margin-bottom:8px">📷 รูปจากผู้รับเหมา</span>
+              <div class="photo-from-contractor" id="aiUploadArea" style="padding:16px;background:#f0fdf4;border:2px dashed var(--teal);border-radius:12px;text-align:center;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+                <i class="fa-solid fa-image fa-2x" style="color:var(--teal)"></i>
+                <span style="font-size:0.8rem;color:#68746f">รูปที่ผู้รับเหมาส่งมาจะแสดงที่นี่</span>
+                <img class="ai-preview" id="aiPreview" alt="Preview" hidden style="max-height:160px;border-radius:8px;width:100%;object-fit:cover">
               </div>
-            </label>
+              <input id="aiImageUpload" class="visually-hidden" type="file" accept="image/*">
+            </div>
             <label><span>Scenario จำลอง (POC)</span>
               <select id="aiScenario">
                 <option value="pass">✅ ผ่านมาตรฐาน</option>
