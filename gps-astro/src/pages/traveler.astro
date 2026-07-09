@@ -29,25 +29,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <main class="map-workspace">
       <div class="top-bar map-ui">
-        <button class="icon-button sidebar-toggle" id="openSidebar" aria-label="Open list">
+        <button class="icon-button sidebar-toggle hover-scale glass-panel" id="openSidebar" aria-label="Open list">
           <i class="fa-solid fa-list"></i>
         </button>
-        <form class="search-box" id="searchForm" role="search">
+        <form class="search-box glass-panel hover-scale" id="searchForm" role="search">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input id="searchInput" type="search" placeholder="ค้นหาโครงการ ถนน จังหวัด" autocomplete="off">
-          <button class="search-submit" type="submit">Search</button>
+          <button class="search-submit hover-scale" type="submit">Search</button>
         </form>
-        <button class="icon-button" id="locateButton" aria-label="ตำแหน่งปัจจุบัน">
+        <button class="icon-button hover-scale glass-panel" id="locateButton" aria-label="ตำแหน่งปัจจุบัน">
           <i class="fa-solid fa-location-crosshairs"></i>
         </button>
       </div>
 
       <div id="map" aria-label="แผนที่งานก่อสร้าง"></div>
 
-      <section class="route-panel tool-panel map-ui">
+      <section class="route-panel tool-panel map-ui glass-panel">
         <header class="tool-header">
           <div><p class="eyebrow">Route Planner</p><h2>คำนวณเส้นทาง</h2></div>
-          <button class="panel-toggle" id="toggleRoutePanel" type="button">-</button>
+          <button class="panel-toggle hover-scale" id="toggleRoutePanel" type="button">-</button>
         </header>
         <div class="tool-body" id="routePanelBody">
           <div class="field-grid">
@@ -70,15 +70,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </section>
 
       <div class="map-controls map-ui">
-        <button class="control-button" id="zoomIn" type="button" aria-label="Zoom in"><i class="fa-solid fa-plus"></i></button>
-        <button class="control-button" id="zoomOut" type="button" aria-label="Zoom out"><i class="fa-solid fa-minus"></i></button>
-        <button class="control-button" id="recenter" type="button" aria-label="Recenter"><i class="fa-solid fa-crosshairs"></i></button>
+        <button class="control-button hover-scale glass-panel" id="zoomIn" type="button" aria-label="Zoom in"><i class="fa-solid fa-plus"></i></button>
+        <button class="control-button hover-scale glass-panel" id="zoomOut" type="button" aria-label="Zoom out"><i class="fa-solid fa-minus"></i></button>
+        <button class="control-button hover-scale glass-panel" id="recenter" type="button" aria-label="Recenter"><i class="fa-solid fa-crosshairs"></i></button>
       </div>
 
       <div class="fab-stack map-ui">
-        <button class="fab-button" id="placePinButton" type="button" aria-label="Place pin"><i class="fa-solid fa-thumbtack"></i></button>
-        <button class="fab-button report-fab" id="createReportFab" type="button" aria-label="Report"><i class="fa-solid fa-flag"></i></button>
-        <button class="fab-button chat-fab" id="thaiLlmChatFab" type="button" aria-label="ThaiLLM Advisor" style="background:#5b21b6;color:white"><i class="fa-solid fa-comments"></i></button>
+        <button class="fab-button hover-scale" id="placePinButton" type="button" aria-label="Place pin"><i class="fa-solid fa-thumbtack"></i></button>
+        <button class="fab-button report-fab hover-scale" id="createReportFab" type="button" aria-label="Report"><i class="fa-solid fa-flag"></i></button>
+        <button class="fab-button chat-fab hover-scale" id="thaiLlmChatFab" type="button" aria-label="ThaiLLM Advisor" style="background:#5b21b6;color:white"><i class="fa-solid fa-comments"></i></button>
       </div>
 
       <!-- Section: ThaiLLM Advisor Chat Panel -->
@@ -106,18 +106,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </form>
       </section>
 
-      <section class="legend map-ui">
+      <section class="legend map-ui glass-panel">
         <div><span class="legend-dot completed"></span>เสร็จสิ้น</div>
         <div><span class="legend-dot in-progress"></span>กำลังทำ</div>
         <div><span class="legend-dot delayed"></span>ล่าช้า</div>
         <div><span class="legend-dot planned"></span>วางแผน</div>
       </section>
 
-      <nav class="bottom-nav map-ui traveler-nav" aria-label="เมนู">
-        <a href="/" class="nav-item"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
-        <button class="nav-item active" data-nav="home" type="button"><i class="fa-solid fa-map"></i><span>แผนที่</span></button>
-        <button class="nav-item" data-nav="alerts" type="button"><i class="fa-solid fa-bell"></i><span>แจ้งเตือน</span></button>
-        <button class="nav-item" data-nav="reports" type="button"><i class="fa-solid fa-flag"></i><span>Reports</span></button>
+      <nav class="bottom-nav map-ui traveler-nav glass-panel" aria-label="เมนู">
+        <a href="/" class="nav-item hover-scale"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
+        <button class="nav-item active hover-scale" data-nav="home" type="button"><i class="fa-solid fa-map"></i><span>แผนที่</span></button>
+        <button class="nav-item hover-scale" data-nav="alerts" type="button"><i class="fa-solid fa-bell"></i><span>แจ้งเตือน</span></button>
+        <button class="nav-item hover-scale" data-nav="reports" type="button"><i class="fa-solid fa-flag"></i><span>Reports</span></button>
       </nav>
 
       <div class="toast map-ui" id="toast" role="status" aria-live="polite"></div>

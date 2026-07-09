@@ -16,8 +16,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <section id="sec-form">
         <div class="mini-map"><div id="map"></div></div>
 
-        <div class="card" style="margin-top:14px">
-          <h3><i class="fa-solid fa-helmet-safety"></i> เพิ่มงานก่อสร้างใหม่</h3>
+        <div class="card glass-panel" style="margin-top:14px; border-left: 4px solid var(--amber);">
+          <h3 style="color: var(--amber);"><i class="fa-solid fa-helmet-safety"></i> เพิ่มงานก่อสร้างใหม่</h3>
           <div class="card-grid">
             <label><span>ชื่องาน</span><input id="constructionName" type="text" placeholder="เช่น ปรับผิวจราจรช่วงทางแยก"></label>
             <div class="card-grid two">
@@ -44,9 +44,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </div>
         </div>
 
-        <div class="card">
-          <h3><i class="fa-solid fa-camera"></i> รูปถ่ายหน้างาน</h3>
-          <p style="font-size:0.82rem;color:#68746f;margin-bottom:12px">ถ่ายรูปสภาพหน้างานเพื่อส่งตรวจ AI</p>
+        <div class="card glass-panel" style="border-left: 4px solid var(--teal);">
+          <h3 style="color: var(--teal);"><i class="fa-solid fa-camera"></i> รูปถ่ายหน้างาน</h3>
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px">ถ่ายรูปสภาพหน้างานเพื่อส่งตรวจ AI</p>
           <div class="photo-upload-area">
             <label class="camera-button" for="contractorPhoto">
               <i class="fa-solid fa-camera"></i>
@@ -61,13 +61,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <img id="contractorPhotoPreview" alt="preview" style="display:none;width:100%;border-radius:12px;margin-top:10px;max-height:200px;object-fit:cover">
         </div>
 
-        <button class="big-action" id="addConstruction" type="button"><i class="fa-solid fa-plus"></i> ส่งรายงานพื้นที่</button>
+        <button class="big-action hover-scale" id="addConstruction" type="button" style="background: var(--amber); color: #fff; border: none; box-shadow: var(--shadow-md);"><i class="fa-solid fa-plus"></i> ส่งรายงานพื้นที่</button>
       </section>
 
       <!-- Section: My projects list -->
       <section id="sec-projects" class="section-hidden">
-        <div class="card">
-          <h3><i class="fa-solid fa-list"></i> โครงการของฉัน</h3>
+        <div class="card glass-panel" style="border-left: 4px solid var(--blue);">
+          <h3 style="color: var(--blue);"><i class="fa-solid fa-list"></i> โครงการของฉัน</h3>
           <div class="filter-row" role="tablist">
             <button class="filter-chip active" data-filter="all" type="button">ทั้งหมด</button>
             <button class="filter-chip" data-filter="in-progress" type="button">กำลังทำ</button>
@@ -101,10 +101,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </section>
     </div>
 
-    <nav class="mobile-bottom-nav">
-      <a href="/"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
-      <button class="active" data-section="sec-form" type="button"><i class="fa-solid fa-plus"></i><span>เพิ่มงาน</span></button>
-      <button data-section="sec-projects" type="button"><i class="fa-solid fa-list"></i><span>โครงการ</span></button>
+    <nav class="mobile-bottom-nav glass-panel" style="border-top-left-radius: 24px; border-top-right-radius: 24px; overflow: hidden; padding-bottom: calc(env(safe-area-inset-bottom) + 8px);">
+      <a href="/" class="hover-scale"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
+      <button class="active hover-scale" data-section="sec-form" type="button"><i class="fa-solid fa-plus"></i><span>เพิ่มงาน</span></button>
+      <button class="hover-scale" data-section="sec-projects" type="button"><i class="fa-solid fa-list"></i><span>โครงการ</span></button>
     </nav>
   </div>
 

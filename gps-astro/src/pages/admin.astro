@@ -20,8 +20,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       <!-- AI Auditor section -->
       <section id="sec-ai">
-        <div class="card">
-          <h3><i class="fa-solid fa-magnifying-glass-chart"></i> ตรวจสอบมาตรฐานหน้างาน</h3>
+        <div class="card glass-panel" style="border-left: 4px solid var(--teal);">
+          <h3 style="color: var(--teal);"><i class="fa-solid fa-magnifying-glass-chart"></i> ตรวจสอบมาตรฐานหน้างาน</h3>
           <div class="card-grid">
             <label><span>โครงการที่จะตรวจ</span><select id="aiZoneSelect"></select></label>
             <div class="contractor-photo-display">
@@ -41,12 +41,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               </select>
             </label>
           </div>
-          <button class="big-action teal" id="runAiAudit" type="button" style="margin-top:12px"><i class="fa-solid fa-magnifying-glass-chart"></i> ตรวจสอบมาตรฐาน</button>
+          <button class="big-action teal hover-scale" id="runAiAudit" type="button" style="margin-top:12px; background: var(--teal); color: #fff; border: none; box-shadow: var(--shadow-md);"><i class="fa-solid fa-magnifying-glass-chart"></i> ตรวจสอบมาตรฐาน</button>
         </div>
 
         <div class="ai-loading" id="aiLoading" hidden><div class="spinner"></div><p>กำลังวิเคราะห์...</p></div>
 
-        <div class="ai-results card" id="aiResults" hidden>
+        <div class="ai-results card glass-panel" id="aiResults" hidden style="border-top: 4px solid var(--teal);">
           <div class="ai-verdict" id="aiVerdict"></div>
           <div class="ai-score-gauge" id="aiScoreGauge"></div>
           <div class="ai-detected" id="aiDetected"></div>
@@ -58,20 +58,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       <!-- Approval Queue section -->
       <section id="sec-queue" class="section-hidden">
-        <div class="card">
-          <h3><i class="fa-solid fa-clipboard-list"></i> คิวอนุมัติ</h3>
+        <div class="card glass-panel" style="border-left: 4px solid var(--green);">
+          <h3 style="color: var(--green);"><i class="fa-solid fa-clipboard-list"></i> คิวอนุมัติ</h3>
           <div id="adminQueueList"></div>
         </div>
-        <div class="card">
-          <h3><i class="fa-solid fa-comments"></i> Feedback จากประชาชน</h3>
+        <div class="card glass-panel" style="border-left: 4px solid var(--amber);">
+          <h3 style="color: var(--amber);"><i class="fa-solid fa-comments"></i> Feedback จากประชาชน</h3>
           <div id="adminFeedbackList"></div>
         </div>
       </section>
 
       <!-- KPI section -->
       <section id="sec-kpi" class="section-hidden">
-        <div class="card">
-          <h3><i class="fa-solid fa-chart-line"></i> KPI ผู้รับเหมา</h3>
+        <div class="card glass-panel" style="border-left: 4px solid var(--blue);">
+          <h3 style="color: var(--blue);"><i class="fa-solid fa-chart-line"></i> KPI ผู้รับเหมา</h3>
           <div id="adminKpiList"></div>
         </div>
       </section>
@@ -87,11 +87,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
 
-    <nav class="mobile-bottom-nav">
-      <a href="/"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
-      <button class="active" data-section="sec-ai" type="button"><i class="fa-solid fa-brain"></i><span>AI ตรวจ</span></button>
-      <button data-section="sec-queue" type="button"><i class="fa-solid fa-clipboard-list"></i><span>อนุมัติ</span></button>
-      <button data-section="sec-kpi" type="button"><i class="fa-solid fa-chart-line"></i><span>KPI</span></button>
+    <nav class="mobile-bottom-nav glass-panel" style="border-top-left-radius: 24px; border-top-right-radius: 24px; overflow: hidden; padding-bottom: calc(env(safe-area-inset-bottom) + 8px);">
+      <a href="/" class="hover-scale"><i class="fa-solid fa-arrow-left"></i><span>เลือก role</span></a>
+      <button class="active hover-scale" data-section="sec-ai" type="button"><i class="fa-solid fa-brain"></i><span>AI ตรวจ</span></button>
+      <button class="hover-scale" data-section="sec-queue" type="button"><i class="fa-solid fa-clipboard-list"></i><span>อนุมัติ</span></button>
+      <button class="hover-scale" data-section="sec-kpi" type="button"><i class="fa-solid fa-chart-line"></i><span>KPI</span></button>
     </nav>
   </div>
 
