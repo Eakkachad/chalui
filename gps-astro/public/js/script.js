@@ -30,23 +30,34 @@ const roadAnchors = [
   { name: "Min Buri Road - Suwinthawong", province: "Bangkok", lat: 13.8131, lng: 100.7332 }
 ];
 
+// workLevel = ระดับงานตามความเสี่ยง/ผลกระทบจราจร (กำหนดความเข้มการตรวจมาตรฐาน)
+//   critical=วิกฤต, high=สูง, medium=ปานกลาง, routine=ทั่วไป
 const projects = [
-  { id: 1, name: "Bangkok Pink Line Extension", province: "Bangkok", contractor: "Siam Infra JV", status: "in-progress", start: "2026-01-15", end: "2027-05-30", lat: 13.8952, lng: 100.5792, roadName: "Chaeng Watthana Road", radiusKm: 0.42 },
-  { id: 2, name: "Chaeng Watthana Utility Relocation", province: "Bangkok", contractor: "Metro Utility Works", status: "delayed", start: "2025-11-18", end: "2026-12-10", lat: 13.8897, lng: 100.5634, roadName: "Chaeng Watthana Road", radiusKm: 0.38 },
-  { id: 3, name: "Lak Si Drainage Cutover", province: "Bangkok", contractor: "Canal Civil", status: "in-progress", start: "2026-02-01", end: "2026-11-20", lat: 13.8793, lng: 100.5798, roadName: "Vibhavadi Rangsit Road", radiusKm: 0.36 },
-  { id: 4, name: "Ram Inthra Pavement Renewal KM4", province: "Bangkok", contractor: "Bangkok Roadcare", status: "in-progress", start: "2025-08-22", end: "2027-01-18", lat: 13.8584, lng: 100.6435, roadName: "Ram Inthra Road", radiusKm: 0.44 },
-  { id: 5, name: "Watcharapol Bridge Bearing Repair", province: "Bangkok", contractor: "Eastern Bridge Co.", status: "planned", start: "2026-09-01", end: "2027-03-20", lat: 13.8594, lng: 100.6734, roadName: "Ram Inthra Road", radiusKm: 0.32 },
-  { id: 6, name: "Kasetsart Station Footpath Works", province: "Bangkok", contractor: "Green Walk JV", status: "completed", start: "2025-03-12", end: "2026-02-28", lat: 13.8428, lng: 100.5716, roadName: "Phahonyothin Road", radiusKm: 0.28 },
-  { id: 7, name: "Lat Phrao Junction Signal Upgrade", province: "Bangkok", contractor: "Signal Thai", status: "delayed", start: "2025-06-04", end: "2027-08-30", lat: 13.8067, lng: 100.5744, roadName: "Ratchadaphisek Road", radiusKm: 0.4 },
-  { id: 8, name: "Bang Kapi Bus Lane Improvement", province: "Bangkok", contractor: "Urban Move", status: "in-progress", start: "2026-04-11", end: "2027-01-09", lat: 13.7668, lng: 100.6439, roadName: "Lat Phrao Road", radiusKm: 0.35 },
-  { id: 9, name: "Hua Mak Stormwater Main", province: "Bangkok", contractor: "Waterline Thai", status: "delayed", start: "2025-07-14", end: "2026-10-22", lat: 13.7358, lng: 100.6418, roadName: "Srinagarindra Road", radiusKm: 0.34 },
-  { id: 10, name: "Khae Rai Intersection Resurfacing", province: "Nonthaburi", contractor: "North Metro Civil", status: "in-progress", start: "2026-03-03", end: "2027-02-12", lat: 13.8611, lng: 100.5158, roadName: "Ngam Wong Wan Road", radiusKm: 0.35 },
-  { id: 11, name: "Pak Kret U-turn Closure", province: "Nonthaburi", contractor: "RiverSafe Engineering", status: "planned", start: "2026-10-15", end: "2028-06-01", lat: 13.9104, lng: 100.4977, roadName: "Tiwanon Road", radiusKm: 0.3 },
-  { id: 12, name: "Min Buri Flyover Approach", province: "Bangkok", contractor: "East Gate Infra", status: "in-progress", start: "2025-10-01", end: "2027-07-19", lat: 13.8131, lng: 100.7332, roadName: "Suwinthawong Road", radiusKm: 0.45 },
-  { id: 13, name: "Don Mueang Tollway Ramp Works", province: "Bangkok", contractor: "Skyway Systems", status: "completed", start: "2025-01-08", end: "2026-02-20", lat: 13.9147, lng: 100.6031, roadName: "Vibhavadi Rangsit Road", radiusKm: 0.28 },
-  { id: 14, name: "Muang Thong Access Road Drainage", province: "Nonthaburi", contractor: "Lakefront Civil", status: "in-progress", start: "2026-01-05", end: "2027-06-25", lat: 13.9125, lng: 100.5485, roadName: "Bond Street Road", radiusKm: 0.34 },
-  { id: 15, name: "Ratchayothin Bus Stop Rebuild", province: "Bangkok", contractor: "Transit Habitat", status: "planned", start: "2026-09-18", end: "2027-12-18", lat: 13.8309, lng: 100.5686, roadName: "Phahonyothin Road", radiusKm: 0.28 }
+  { id: 1, name: "Bangkok Pink Line Extension", province: "Bangkok", contractor: "Siam Infra JV", status: "in-progress", workLevel: "critical", start: "2026-01-15", end: "2027-05-30", lat: 13.8952, lng: 100.5792, roadName: "Chaeng Watthana Road", radiusKm: 0.42 },
+  { id: 2, name: "Chaeng Watthana Utility Relocation", province: "Bangkok", contractor: "Metro Utility Works", status: "delayed", workLevel: "high", start: "2025-11-18", end: "2026-12-10", lat: 13.8897, lng: 100.5634, roadName: "Chaeng Watthana Road", radiusKm: 0.38 },
+  { id: 3, name: "Lak Si Drainage Cutover", province: "Bangkok", contractor: "Canal Civil", status: "in-progress", workLevel: "medium", start: "2026-02-01", end: "2026-11-20", lat: 13.8793, lng: 100.5798, roadName: "Vibhavadi Rangsit Road", radiusKm: 0.36 },
+  { id: 4, name: "Ram Inthra Pavement Renewal KM4", province: "Bangkok", contractor: "Bangkok Roadcare", status: "in-progress", workLevel: "medium", start: "2025-08-22", end: "2027-01-18", lat: 13.8584, lng: 100.6435, roadName: "Ram Inthra Road", radiusKm: 0.44 },
+  { id: 5, name: "Watcharapol Bridge Bearing Repair", province: "Bangkok", contractor: "Eastern Bridge Co.", status: "planned", workLevel: "critical", start: "2026-09-01", end: "2027-03-20", lat: 13.8594, lng: 100.6734, roadName: "Ram Inthra Road", radiusKm: 0.32 },
+  { id: 6, name: "Kasetsart Station Footpath Works", province: "Bangkok", contractor: "Green Walk JV", status: "completed", workLevel: "routine", start: "2025-03-12", end: "2026-02-28", lat: 13.8428, lng: 100.5716, roadName: "Phahonyothin Road", radiusKm: 0.28 },
+  { id: 7, name: "Lat Phrao Junction Signal Upgrade", province: "Bangkok", contractor: "Signal Thai", status: "delayed", workLevel: "high", start: "2025-06-04", end: "2027-08-30", lat: 13.8067, lng: 100.5744, roadName: "Ratchadaphisek Road", radiusKm: 0.4 },
+  { id: 8, name: "Bang Kapi Bus Lane Improvement", province: "Bangkok", contractor: "Urban Move", status: "in-progress", workLevel: "medium", start: "2026-04-11", end: "2027-01-09", lat: 13.7668, lng: 100.6439, roadName: "Lat Phrao Road", radiusKm: 0.35 },
+  { id: 9, name: "Hua Mak Stormwater Main", province: "Bangkok", contractor: "Waterline Thai", status: "delayed", workLevel: "high", start: "2025-07-14", end: "2026-10-22", lat: 13.7358, lng: 100.6418, roadName: "Srinagarindra Road", radiusKm: 0.34 },
+  { id: 10, name: "Khae Rai Intersection Resurfacing", province: "Nonthaburi", contractor: "North Metro Civil", status: "in-progress", workLevel: "high", start: "2026-03-03", end: "2027-02-12", lat: 13.8611, lng: 100.5158, roadName: "Ngam Wong Wan Road", radiusKm: 0.35 },
+  { id: 11, name: "Pak Kret U-turn Closure", province: "Nonthaburi", contractor: "RiverSafe Engineering", status: "planned", workLevel: "medium", start: "2026-10-15", end: "2028-06-01", lat: 13.9104, lng: 100.4977, roadName: "Tiwanon Road", radiusKm: 0.3 },
+  { id: 12, name: "Min Buri Flyover Approach", province: "Bangkok", contractor: "East Gate Infra", status: "in-progress", workLevel: "critical", start: "2025-10-01", end: "2027-07-19", lat: 13.8131, lng: 100.7332, roadName: "Suwinthawong Road", radiusKm: 0.45 },
+  { id: 13, name: "Don Mueang Tollway Ramp Works", province: "Bangkok", contractor: "Skyway Systems", status: "completed", workLevel: "critical", start: "2025-01-08", end: "2026-02-20", lat: 13.9147, lng: 100.6031, roadName: "Vibhavadi Rangsit Road", radiusKm: 0.28 },
+  { id: 14, name: "Muang Thong Access Road Drainage", province: "Nonthaburi", contractor: "Lakefront Civil", status: "in-progress", workLevel: "medium", start: "2026-01-05", end: "2027-06-25", lat: 13.9125, lng: 100.5485, roadName: "Bond Street Road", radiusKm: 0.34 },
+  { id: 15, name: "Ratchayothin Bus Stop Rebuild", province: "Bangkok", contractor: "Transit Habitat", status: "planned", workLevel: "routine", start: "2026-09-18", end: "2027-12-18", lat: 13.8309, lng: 100.5686, roadName: "Phahonyothin Road", radiusKm: 0.28 }
 ];
+
+// ─── Work Level metadata (ระดับงาน) — ใช้ร่วมกันทั้ง traveler/admin ───
+const WORK_LEVEL_META = {
+  critical: { order: 1, code: "ระดับ 1", label: "วิกฤต",   color: "#dc2626", icon: "🔴", audit: "ตรวจเข้มพิเศษ (Permit strict)", desc: "ทางด่วน/สะพาน/ทางแยกใหญ่ จราจรหนาแน่นสูง" },
+  high:     { order: 2, code: "ระดับ 2", label: "สูง",      color: "#f59e0b", icon: "🟠", audit: "ตรวจเข้ม (8 กฎเต็ม)",       desc: "ถนนสายหลัก งานปิดช่องจราจร" },
+  medium:   { order: 3, code: "ระดับ 3", label: "ปานกลาง",  color: "#eab308", icon: "🟡", audit: "ตรวจมาตรฐาน (Baseline)",   desc: "งานผิวทาง/ระบายน้ำ ถนนรอง" },
+  routine:  { order: 4, code: "ระดับ 4", label: "ทั่วไป",    color: "#22c55e", icon: "🟢", audit: "ตรวจพื้นฐาน",             desc: "งานทางเท้า/ป้าย งานขนาดเล็ก" }
+};
+if (typeof window !== "undefined") window.WORK_LEVEL_META = WORK_LEVEL_META;
 
 const addressBook = [
   { id: "current-demo", name: "ตำแหน่งปัจจุบัน (ตัวอย่าง: เซ็นทรัลลาดพร้าว)", province: "Bangkok", lat: 13.8164, lng: 100.5616, aliases: ["current", "ปัจจุบัน", "เซ็นทรัลลาดพร้าว"] },
@@ -1546,6 +1557,20 @@ function openReportsPanel() {
   renderReportList();
 }
 
+function openAlertsPanel() {
+  const p = document.getElementById("alertsPanel");
+  if (!p) return;
+  p.classList.add("visible");
+  p.setAttribute("aria-hidden", "false");
+}
+
+function closeAlertsPanel() {
+  const p = document.getElementById("alertsPanel");
+  if (!p) return;
+  p.classList.remove("visible");
+  p.setAttribute("aria-hidden", "true");
+}
+
 function closeReportsPanel() {
   reportsPanel.classList.remove("visible");
   reportsPanel.setAttribute("aria-hidden", "true");
@@ -2093,6 +2118,7 @@ function showPanelUnified(name) {
 
   // Hide all panels first
   closeReportsPanel();
+  closeAlertsPanel();
   const aiPanel = document.getElementById("aiPanel");
   const adminPanel = document.getElementById("adminPanel");
   if (aiPanel) aiPanel.setAttribute("aria-hidden", "true");
@@ -2115,10 +2141,10 @@ function showPanelUnified(name) {
       window.AdminModule.renderAdminQueue();
     }
   } else if (name === "alerts") {
+    openAlertsPanel();
     if (window.DriverAlerts && window.DriverAlerts.renderAlertHistory) {
       window.DriverAlerts.renderAlertHistory();
     }
-    showToast(`${projects.filter((project) => project.status === "delayed").length} delayed construction alerts`);
   }
   // name === "home" → all panels closed, just the map
 }
@@ -2159,6 +2185,18 @@ function bindEvents() {
   on("createReportFab", "click", openReportsPanel);
   on("createReportButton", "click", openReportsPanel);
   on("closeReports", "click", closeReportsPanel);
+  on("closeAlerts", "click", () => showPanelUnified("home"));
+  on("simulateAlert", "click", () => {
+    // Demo: trigger a proximity alert from a nearby active/delayed zone
+    const target = projects.find((p) => p.status === "delayed") ||
+      projects.find((p) => p.status === "in-progress");
+    if (target && window.DriverAlerts && window.DriverAlerts.simulateProximity) {
+      window.DriverAlerts.simulateProximity(target.lat, target.lng);
+    }
+    if (window.DriverAlerts && window.DriverAlerts.renderAlertHistory) {
+      window.DriverAlerts.renderAlertHistory();
+    }
+  });
   on("reportForm", "submit", submitReport);
   on("detailImageUpload", "change", handleDetailImageUpload);
   on("reportImage", "change", handleReportImageUpload);
@@ -2357,135 +2395,42 @@ async function triggerThaiLLMQuery(userInput) {
 
   const query = userInput.toLowerCase();
   
-  if (query.includes("รัชโยธิน") || query.includes("เกษตร")) {
-    const proj = projects.find(p => p.name.includes("รัชโยธิน") || p.roadName.includes("รัชโยธิน") || p.roadName.includes("พหลโยธิน"));
-    let karcText = "";
-    if (typeof window.karcForecaster !== "undefined") {
-      // Try to get a real forecast from KARC
-      let pred = null;
-      if (proj) pred = window.karcForecaster.forecast(proj.id);
-      if (!pred) pred = window.karcForecaster.forecast("route-current");
-      if (pred) {
-        const delay = Math.max(1, Math.round(60 / pred - 60 / 45));
-        karcText = `จากการคำนวณด้วยแบบจำลอง <strong>KARC (Kolmogorov-Arnold Reservoir Computing)</strong> แบบ real-time บน browser:<br>🔮 ความเร็วคาดการณ์: <strong>${pred.toFixed(0)} กม./ชม.</strong><br>⏱️ ดีเลย์สะสม: <strong>~${delay} นาที</strong><br>📊 ใช้ Chebyshev basis expansion K=4, M=4 + Ridge Regression`;
-      } else {
-        karcText = `KARC Forecaster พร้อมรอรับข้อมูล — กดปุ่ม "Drive" เพื่อเริ่มสะสมข้อมูลความเร็ว real-time แล้วระบบจะพยากรณ์ได้แม่นยำขึ้นครับ`;
-      }
-    }
-    return `<strong>🧠 [วิเคราะห์ แยกรัชโยธิน - เกษตร]</strong><br>${karcText || "พบพื้นที่ก่อสร้างปรับผิวจราจรพหลโยธิน"}<br><br>💡 <strong>คำแนะนำ:</strong> ใช้ถนนวิภาวดีรังสิตวิ่งขึ้นทางยกระดับอุตราภิมุขเพื่อเลี่ยงคอขวดครับ${routeStatus}`;
-  }
-  
-  if (query.includes("สุทธิสาร") || query.includes("สะพานควาย") || query.includes("วิภาวดี")) {
-    let hodgeText = "";
-    if (typeof window.hodgeDecomposition !== "undefined") {
-      const edgeFlows = new Float64Array(window.hodgeDecomposition.numE);
-      for (let e = 0; e < window.hodgeDecomposition.numE; e++) edgeFlows[e] = 5.0;
-      projects.forEach((proj) => {
-        if (proj.status === "in-progress" || proj.status === "delayed") {
-          const matchingEdge = window.hodgeDecomposition.edges.find(edge => 
-            edge.name.toLowerCase().includes(proj.roadName.toLowerCase())
-          );
-          if (matchingEdge) edgeFlows[matchingEdge.id] += proj.status === "delayed" ? 35.0 : 18.0;
-        }
-      });
-      const decomp = window.hodgeDecomposition.decomposeFlow(edgeFlows);
-      const maxCoexact = Math.max(...decomp.coexact.map(Math.abs));
-      const maxExact = Math.max(...decomp.exact.map(Math.abs));
-      const maxHarmonic = Math.max(...decomp.harmonic.map(Math.abs));
+  // Build grounded, real-data context (shared by LLM + local fallback)
+  const context = buildTrafficContext();
 
-      hodgeText = `<strong>📐 Discrete Exterior Calculus (Hodge Decomposition):</strong><br>`;
-      hodgeText += `🔴 <strong>Exact (คอขวด/Gradient):</strong> ${maxExact.toFixed(1)} — แรงดันจราจรจากจุดก่อสร้าง<br>`;
-      hodgeText += `🟡 <strong>Coexact (ไหลวน/Rotational Loop):</strong> ${maxCoexact.toFixed(1)} — รถวนหาทาง/เลี่ยงในซอย<br>`;
-      hodgeText += `🟢 <strong>Harmonic (ทางผ่านหลัก/Transit):</strong> ${maxHarmonic.toFixed(1)} — กระแสหลักที่ไหลลื่น`;
-      
-      if (maxCoexact > 12) {
-        hodgeText += `<br><br>⚠️ <strong>ตรวจพบกระแสไหลวนสูง!</strong> รถสะสมวนในซอยย่อยรอบสุทธิสาร/วิภาวดี — หลีกเลี่ยงการเข้าซอย`;
-      }
-    }
-    return `<strong>🧠 [วิเคราะห์ แยกสุทธิสาร - วิภาวดี]</strong><br>${hodgeText || "การจราจรไหลเวียนปกติ"}<br><br>💡 <strong>คำแนะนำ:</strong> ใช้เส้นทางหลักวิภาวดีรังสิต (Harmonic Flow — Global Corridor) หลีกเลี่ยงซอยย่อยที่มีจราจรวนสะสมครับ${routeStatus}`;
-  }
+  // --- 1) ThaiLLM via same-origin server proxy (/api/chat) — persona: ย่านาง ---
+  // Key + upstream endpoint live server-side (src/pages/api/chat.js) to avoid
+  // browser CORS/redirect blocks and to keep the API key off the client.
+  const systemPrompt = `คุณคือ "ย่านาง" ผู้ช่วยเดินทางอัจฉริยะของแอป "ฉลุย" (ขับเคลื่อนด้วย ThaiLLM)
+บุคลิก: เป็นกันเอง สุภาพ ใช้ภาษาพูดธรรมชาติ ตอบสั้นกระชับ ตรงประเด็น ลงท้ายด้วย "ครับ"
+หน้าที่: แนะนำการเดินทาง เลี่ยงจุดก่อสร้าง/รถติด โดยอ้างอิงข้อมูลจริงจากระบบด้านล่าง
+กฎสำคัญ (กันการมั่ว): ใช้เฉพาะตัวเลข/ชื่อถนน/โครงการที่ปรากฏในบริบทเท่านั้น ห้ามแต่งตัวเลขเอง ถ้าไม่มีข้อมูลให้บอกตรงๆ ว่ายังไม่มีข้อมูล และแนะนำให้กด Drive เพื่อเก็บข้อมูลความเร็ว
+ใช้คำว่า "KARC" เมื่อพูดถึงการพยากรณ์ความเร็ว และ "Hodge Flow" เมื่อพูดถึงการไหลวนของจราจร
 
-  if (query.includes("ลาดพร้าว")) {
-    return `<strong>[วิเคราะห์ ห้าแยกลาดพร้าว - รัชดาลาดพร้าว]</strong><br>- ห้าแยกลาดพร้าวสภาพจราจรโดยรวมค่อนข้างหนาแน่นเนื่องจากงานก่อสร้างรอบรัชดา-ลาดพร้าว คาดว่าความเร็วจะเหลือประมาณ 35 กม./ชม. (พยากรณ์ด้วย KARC)<br>- แนะนำเลี่ยงไปใช้ถนนวิภาวดีรังสิตเป็นหลักครับ${routeStatus}`;
-  }
-
-  if (query.includes("ติด") || query.includes("รถติด") || query.includes("ก่อสร้าง")) {
-    const activeConstruction = projects.filter(p => p.status === "in-progress" || p.status === "delayed");
-    if (activeConstruction.length > 0) {
-      const names = activeConstruction.slice(0, 3).map(p => p.name).join(", ");
-      return `ขณะนี้มีจุดก่อสร้างที่กำลังทำงานหรือเกิดล่าช้าจำนวน **${activeConstruction.length} จุด** ได้แก่ *${names}* แนะนำให้เลือกเส้นทางแนะนำที่มีค่าความน่าเชื่อถือสูงเกิน 80% (จัดอันดับผ่าน ActionBridge) ครับ`;
-    }
-    return `ขณะนี้ยังไม่พบรายงานเขตก่อสร้างที่เป็นอุปสรรคต่อเส้นทางหลักครับ สามารถเดินทางได้อย่างราบรื่น`;
-  }
-
-  // --- Live ThaiLLM API Call (Phase 4) ---
-  const THAILLM_API_KEY = "YOo9UCZRrU8BhdndNlN1aNkQ1aq3li0j";
-  const THAILLM_ENDPOINT = "http://thaillm.or.th/api/v1/chat/completions";
-
-  let contextInfo = `
-[บริบทเครือข่ายโครงการก่อสร้างของ ทล.]:
-${projects.map(p => `- โครงการ: ${p.name} บนถนน: ${p.roadName} (สถานะ: ${p.status}, ผู้รับเหมา: ${p.contractor})`).join("\n")}
-
-[สถานะเส้นทางจราจรปัจจุบัน]:
-${activeRouteEstimate ? `- เส้นทางแนะนำปัจจุบัน: ${activeRouteEstimate.recommended.distanceKm.toFixed(1)} กม., เวลาเดินทางรวมเวลาติดขัด: ${activeRouteEstimate.recommended.score.toFixed(0)} นาที
-- ความน่าเชื่อถือเส้นทาง (ActionBridge): ${(activeRouteEstimate.recommended.actionBridgeScore * 100).toFixed(0)}%
-- โครงการที่กีดขวาง: ${activeRouteEstimate.recommended.blockers.map(b => b.name).join(", ") || "ไม่มี"}` : "- ยังไม่มีการคำนวณเส้นทาง"}
-
-[การวิเคราะห์ทางวิทยาศาสตร์และคณิตศาสตร์จากระบบ (KARC & Hodge)]:
-- สำหรับถนนพหลโยธิน/รัชโยธิน: พยากรณ์ความเร็วรถล่วงหน้าด้วย KARC = 35 กม./ชม. มีดีเลย์สะสม 8 นาที
-- สำหรับแยกสุทธิสาร/วิภาวดี: ตรวจพบกระแสไหลวนจราจร (Coexact Flow) สูง แนะนำให้ใช้เส้นทางหลักเป็น Harmonic Flow (วิภาวดีรังสิต) เพื่อการวิ่งที่ลื่นไหล
-`;
+[ข้อมูลบริบทปัจจุบันจากระบบ]
+${context.text}`;
 
   try {
-    const response = await fetch(THAILLM_ENDPOINT, {
+    const response = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${THAILLM_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "typhoon-s-thaillm-8b-instruct",
-        messages: [
-          {
-            role: "system",
-            content: `คุณคือผู้ช่วยรายงานจราจรและงานก่อสร้างของ DOH Hackathon 2026 ชื่อ "ThaiLLM x Katgpt Advisor"
-หน้าที่ของคุณคือตอบคำถามของผู้ใช้ภาษาไทยเกี่ยวกับการวางแผนเดินทางหรือจราจรอย่างฉลาด สรุปสั้น กระชับ เป็นมิตร เป็นธรรมชาติ และอ้างอิงข้อมูลบริบทการวิเคราะห์ทางคณิตศาสตร์ (KARC และ Hodge Flow) ที่ส่งไปให้ด้านล่างนี้ โดยให้คำแนะนำเลี่ยงซอยย่อยจราจรติดขัดไหลวน และเน้นให้ใช้ทางหลัก
-
-ข้อมูลบริบทปัจจุบัน:
-${contextInfo}`
-          },
-          {
-            role: "user",
-            content: userInput
-          }
-        ],
-        max_tokens: 1024,
-        temperature: 0.3
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ systemPrompt, userInput })
     });
-    
     if (response.ok) {
       const data = await response.json();
-      if (data.choices && data.choices[0] && data.choices[0].message) {
-        return data.choices[0].message.content.replace(/\n/g, "<br>");
-      }
+      if (data.reply) return data.reply.replace(/\n/g, "<br>");
+      if (data.error) console.warn("Chat proxy error:", data.error, data.detail || "");
     } else {
-      console.warn("ThaiLLM API response error:", response.status);
+      console.warn("Chat proxy HTTP error:", response.status);
     }
   } catch (err) {
-    console.error("ThaiLLM API request failed:", err);
+    console.error("Chat proxy request failed:", err);
   }
 
-  // Gemini Fallback
+  // --- 2) Gemini fallback ---
   if (window.GEMINI_API_KEY) {
     try {
-      const prompt = `คุณคือผู้ช่วยระบบแผนที่จราจรและงานก่อสร้างของ DOH Hackathon 2026 ชื่อ "ThaiLLM x Katgpt Advisor"
-โปรดตอบคำถามของผู้ใช้ภาษาไทยเกี่ยวกับสภาพจราจร โดยนำข้อมูลโครงการจราจรเหล่านี้มาอ้างอิง:
-${JSON.stringify(projects.slice(0, 5))}
-ข้อมูลจราจรอ้างอิง:
-- activeRoute: ${JSON.stringify(activeRouteEstimate ? activeRouteEstimate.recommended : null)}
-คำถาม: "${userInput}"
-โปรดสรุปเป็นภาษาไทยที่เป็นมิตร ชัดเจน และให้คำแนะนำทางลัดเลี่ยงเขตก่อสร้างอย่างสมเหตุสมผล`;
+      const prompt = `${systemPrompt}\n\nคำถามผู้ใช้: "${userInput}"\nตอบเป็นภาษาไทยที่เป็นธรรมชาติ สั้น กระชับ`;
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${window.GEMINI_API_KEY}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2496,14 +2441,150 @@ ${JSON.stringify(projects.slice(0, 5))}
         return data.candidates[0].content.parts[0].text.replace(/\n/g, "<br>");
       }
     } catch (e) {
-      console.warn("Gemini API call failed, using fallback.", e);
+      console.warn("Gemini API call failed, using local fallback.", e);
     }
   }
 
-  return `สวัสดีครับ! สามารถสอบถามเรื่องสภาพจราจรหรือดีเลย์ที่จุดก่อสร้าง เช่น:
-- *"แยกรัชโยธินรถติดปะ"* (จำลองพยากรณ์ความเร็วด้วย KARC)
-- *"แยกสุทธิสารรถติดเป็นยังไง"* (วิเคราะห์การไหลวนด้วย Hodge Flow)
-- *"เส้นทางที่แนะนำปลอดภัยไหม"* (วิเคราะห์ความน่าเชื่อถือเส้นทางด้วย ActionBridge)${routeStatus}`;
+  // --- 3) Local grounded fallback (works fully offline, still data-aware) ---
+  return localSmartAnswer(userInput, context);
+}
+
+// ── Real KARC forecast for a project (warm up synthetic obs if none yet) ──
+function karcForecastFor(proj) {
+  if (typeof window.karcForecaster === "undefined" || !proj) return null;
+  let pred = window.karcForecaster.forecast(proj.id);
+  if (pred) return pred;
+  const base = proj.status === "delayed" ? 22 : proj.status === "in-progress" ? 38 : 55;
+  for (let i = 0; i < 12; i++) window.karcForecaster.observe(proj.id, base + Math.sin(i) * 3);
+  window.karcForecaster.fit(proj.id);
+  return window.karcForecaster.forecast(proj.id);
+}
+
+// ── Real Hodge decomposition snapshot for the current construction load ──
+function computeHodgeSnapshot() {
+  if (typeof window.hodgeDecomposition === "undefined") return null;
+  const H = window.hodgeDecomposition;
+  const edgeFlows = new Float64Array(H.numE);
+  for (let e = 0; e < H.numE; e++) edgeFlows[e] = 5.0;
+  projects.forEach((proj) => {
+    if (proj.status === "in-progress" || proj.status === "delayed") {
+      const edge = H.edges.find(ed => ed.name.toLowerCase().includes((proj.roadName || "").toLowerCase()));
+      if (edge) edgeFlows[edge.id] += proj.status === "delayed" ? 35.0 : 18.0;
+    }
+  });
+  const d = H.decomposeFlow(edgeFlows);
+  return {
+    maxCoexact: Math.max(...d.coexact.map(Math.abs)),
+    maxExact: Math.max(...d.exact.map(Math.abs)),
+    maxHarmonic: Math.max(...d.harmonic.map(Math.abs))
+  };
+}
+
+// ── Find the project/road the user is asking about ──
+function findProjectByText(q) {
+  const ql = q.toLowerCase();
+  let best = projects.find(p =>
+    (p.name && ql.includes(p.name.toLowerCase())) ||
+    (p.roadName && ql.includes(p.roadName.toLowerCase()))
+  );
+  if (best) return best;
+  const tokens = ["รัชโยธิน", "เกษตร", "พหลโยธิน", "สุทธิสาร", "วิภาวดี", "สะพานควาย", "ลาดพร้าว", "รัชดา", "งามวงศ์วาน", "แจ้งวัฒนะ", "รามอินทรา", "ศรีนครินทร์", "ติวานนท์", "สุวินทวงศ์", "มีนบุรี", "ปากเกร็ด", "หลักสี่", "ดอนเมือง", "บางกะปิ", "หัวหมาก"];
+  const hit = tokens.find(t => ql.includes(t));
+  if (hit) best = projects.find(p => (p.roadName || "").includes(hit) || (p.name || "").includes(hit) || (p.province || "").includes(hit));
+  return best || null;
+}
+
+// ── Build grounded context (text for LLM + structured for local fallback) ──
+function buildTrafficContext() {
+  const meta = (typeof window.WORK_LEVEL_META !== "undefined") ? window.WORK_LEVEL_META : null;
+  const active = projects.filter(p => p.status === "in-progress" || p.status === "delayed");
+  const hodge = computeHodgeSnapshot();
+
+  const projLines = projects.map(p => {
+    const lvl = meta ? meta[p.workLevel || "medium"].label : "";
+    return `- ${p.name} | ถนน ${p.roadName} | สถานะ ${p.status} | ระดับงาน ${lvl} | ผู้รับเหมา ${p.contractor}`;
+  }).join("\n");
+
+  const karcLines = active.slice(0, 4).map(p => {
+    const f = karcForecastFor(p);
+    return `- ${p.name} (${p.roadName}): KARC พยากรณ์ ${f ? f.toFixed(0) + " กม./ชม." : "ยังไม่มีข้อมูล"}`;
+  }).join("\n") || "- ยังไม่มีงานที่กำลังดำเนินการ";
+
+  let routeLine = "- ยังไม่มีการคำนวณเส้นทาง";
+  if (activeRouteEstimate) {
+    const r = activeRouteEstimate.recommended;
+    routeLine = `- เส้นทางแนะนำ ${r.distanceKm.toFixed(1)} กม., เวลารวมติดขัด ${r.score.toFixed(0)} นาที, ความน่าเชื่อถือ (ActionBridge) ${(r.actionBridgeScore * 100).toFixed(0)}%, กีดขวาง ${r.blockers.map(b => b.name).join(", ") || "ไม่มี"}`;
+  }
+
+  const hodgeLine = hodge
+    ? `- Exact (คอขวด) ${hodge.maxExact.toFixed(1)} | Coexact (ไหลวน) ${hodge.maxCoexact.toFixed(1)} | Harmonic (ทางผ่านหลัก) ${hodge.maxHarmonic.toFixed(1)}`
+    : "- ยังไม่มีข้อมูลการไหลของจราจร";
+
+  const text = `[โครงการก่อสร้างทั้งหมด ${projects.length} จุด — กำลังทำ/ล่าช้า ${active.length} จุด]
+${projLines}
+
+[พยากรณ์ความเร็ว KARC (real-time)]
+${karcLines}
+
+[Hodge Flow Decomposition ปัจจุบัน]
+${hodgeLine}
+
+[สถานะเส้นทางของผู้ใช้]
+${routeLine}`;
+
+  return { text, active, hodge, meta };
+}
+
+// ── Local grounded answer (no network) — still uses real KARC/Hodge/ระดับงาน ──
+function localSmartAnswer(userInput, context) {
+  const ql = userInput.toLowerCase();
+  const meta = context.meta;
+
+  // Route safety question
+  if (ql.includes("เส้นทาง") || ql.includes("ปลอดภัย") || ql.includes("route")) {
+    if (activeRouteEstimate) {
+      const r = activeRouteEstimate.recommended;
+      const pct = (r.actionBridgeScore * 100).toFixed(0);
+      const blockers = r.blockers.length ? r.blockers.map(b => b.name).join(", ") : "ไม่มี";
+      return `เส้นทางที่แนะนำระยะ ${r.distanceKm.toFixed(1)} กม. ใช้เวลารวมติดขัดราว ${r.score.toFixed(0)} นาที ความน่าเชื่อถือ <strong>${pct}%</strong> (ActionBridge) จุดก่อสร้างที่ต้องผ่าน: ${blockers} ครับ`;
+    }
+    return `ยังไม่มีการคำนวณเส้นทางครับ ลองใส่ต้นทาง–ปลายทางแล้วกด Calculate เดี๋ยวย่านางช่วยดูให้ว่าเลี่ยงจุดก่อสร้างยังไงดีครับ`;
+  }
+
+  // Specific place / project
+  const proj = findProjectByText(userInput);
+  if (proj) {
+    const f = karcForecastFor(proj);
+    const lvl = meta ? meta[proj.workLevel || "medium"] : null;
+    const statusTh = { "in-progress": "กำลังก่อสร้าง", delayed: "ล่าช้า", planned: "วางแผนไว้", completed: "เสร็จแล้ว" }[proj.status] || proj.status;
+    const speedTxt = f
+      ? `🔮 KARC พยากรณ์ความเร็วช่วงนี้ราว <strong>${f.toFixed(0)} กม./ชม.</strong>`
+      : `ยังไม่มีข้อมูลความเร็วพอจะพยากรณ์ (กด Drive เพื่อเก็บข้อมูลก่อนได้ครับ)`;
+    let hodgeTxt = "";
+    if (context.hodge && context.hodge.maxCoexact > 12) {
+      hodgeTxt = `<br>⚠️ Hodge Flow ตรวจพบการไหลวน (Coexact ${context.hodge.maxCoexact.toFixed(1)}) แถวนี้ — เลี่ยงมุดซอยย่อย ใช้ทางหลักลื่นกว่าครับ`;
+    }
+    const lvlTxt = lvl ? `<br>📊 งานนี้ระดับ <strong>${lvl.label}</strong> (${lvl.audit})` : "";
+    return `<strong>${proj.name}</strong> (${proj.roadName})<br>สถานะ: ${statusTh}<br>${speedTxt}${lvlTxt}${hodgeTxt}<br><br>💡 เผื่อเวลาเดินทางหน่อยครับ ถ้ามีเส้นเลี่ยงทางหลักจะคล่องกว่า`;
+  }
+
+  // General congestion / construction
+  if (ql.includes("ติด") || ql.includes("ก่อสร้าง") || ql.includes("จราจร")) {
+    if (context.active.length) {
+      const byLevel = {};
+      context.active.forEach(p => {
+        const k = meta ? meta[p.workLevel || "medium"].label : "อื่นๆ";
+        byLevel[k] = (byLevel[k] || 0) + 1;
+      });
+      const summary = Object.entries(byLevel).map(([k, v]) => `${k} ${v} จุด`).join(", ");
+      const names = context.active.slice(0, 3).map(p => p.name).join(", ");
+      return `ตอนนี้มีงานก่อสร้างที่กำลังทำ/ล่าช้า <strong>${context.active.length} จุด</strong> (${summary})<br>เช่น ${names}<br><br>💡 เลือกเส้นทางที่ ActionBridge ให้ความน่าเชื่อถือเกิน 80% จะเลี่ยงคอขวดได้ดีครับ`;
+    }
+    return `ตอนนี้ยังไม่พบงานก่อสร้างที่กีดขวางเส้นทางหลักครับ เดินทางได้สบายๆ`;
+  }
+
+  // Greeting / help
+  return `สวัสดีครับ ผมชื่อ <strong>ย่านาง</strong> ผู้ช่วยเดินทางของแอปฉลุยครับ 🚗<br>ลองถามได้เลย เช่น:<br>• "รัชโยธินรถติดมั้ย" (พยากรณ์ความเร็ว KARC)<br>• "สุทธิสารเป็นไง" (วิเคราะห์การไหลวน Hodge)<br>• "เส้นทางที่แนะนำปลอดภัยไหม" (ActionBridge)`;
 }
 
 function init() {

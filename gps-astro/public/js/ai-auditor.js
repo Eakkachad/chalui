@@ -755,9 +755,28 @@ function initAiAuditor() {
 function populateAuditZoneSelector() {
   const sel = document.getElementById('aiZoneSelect');
   if (!sel || typeof projects === 'undefined') return;
-  sel.innerHTML = projects
-    .map(p => `<option value="${p.id}">${p.name} (${statusLabelOf(p.status)})</option>`)
-    .join('');
+
+  const meta = (typeof WORK_LEVEL_META !== 'undefined') ? WORK_LEVEL_META : null;
+
+  // Fallback: flat list if level metadata is unavailable
+  if (!meta) {
+    sel.innerHTML = projects
+      .map(p => `<option value="${p.id}">${p.name} (${statusLabelOf(p.status)})</option>`)
+      .join('');
+    return;
+  }
+
+  // Group projects by work level (ระดับงาน), ordered critical → routine
+  const levels = Object.keys(meta).sort((a, b) => meta[a].order - meta[b].order);
+  sel.innerHTML = levels.map(lvl => {
+    const inLvl = projects.filter(p => (p.workLevel || 'medium') === lvl);
+    if (inLvl.length === 0) return '';
+    const opts = inLvl
+      .map(p => `<option value="${p.id}">${p.name} · ${statusLabelOf(p.status)}</option>`)
+      .join('');
+    const m = meta[lvl];
+    return `<optgroup label="${m.icon} ${m.code} — ${m.label} (${inLvl.length} งาน)">${opts}</optgroup>`;
+  }).join('');
 }
 
 function statusLabelOf(status) {

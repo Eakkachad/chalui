@@ -78,7 +78,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="fab-stack map-ui">
         <button class="fab-button hover-scale" id="placePinButton" type="button" aria-label="Place pin"><i class="fa-solid fa-thumbtack"></i></button>
         <button class="fab-button report-fab hover-scale" id="createReportFab" type="button" aria-label="Report"><i class="fa-solid fa-flag"></i></button>
-        <button class="fab-button chat-fab hover-scale" id="thaiLlmChatFab" type="button" aria-label="ThaiLLM Advisor" style="background:#5b21b6;color:white"><i class="fa-solid fa-comments"></i></button>
+        <button class="fab-button chat-fab hover-scale" id="thaiLlmChatFab" type="button" aria-label="ย่านาง ผู้ช่วย AI" style="background:#5b21b6;color:white"><i class="fa-solid fa-comments"></i></button>
       </div>
 
       <!-- Section: ThaiLLM Advisor Chat Panel -->
@@ -87,8 +87,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div style="display:flex; align-items:center; gap:10px">
             <i class="fa-solid fa-brain" style="font-size:1.3rem; color:#c084fc; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.1))"></i>
             <div style="text-align:left">
-              <p class="eyebrow" style="color:rgba(255,255,255,0.75); font-size:0.65rem; margin:0; letter-spacing:0.8px; font-weight:600; text-transform:uppercase">ThaiLLM x Katgpt</p>
-              <h3 style="margin:0; font-size:0.95rem; font-weight:600; letter-spacing:-0.2px">ผู้ช่วยรู้รอบก่อนเดินทาง</h3>
+              <p class="eyebrow" style="color:rgba(255,255,255,0.75); font-size:0.65rem; margin:0; letter-spacing:0.8px; font-weight:600; text-transform:uppercase">ขับเคลื่อนด้วย ThaiLLM</p>
+              <h3 style="margin:0; font-size:0.95rem; font-weight:600; letter-spacing:-0.2px">ย่านาง · ผู้ช่วยรู้รอบก่อนเดินทาง</h3>
             </div>
           </div>
           <button class="panel-close-btn" id="closeChatPanel" type="button" style="background:rgba(255,255,255,0.2); border:none; color:white; cursor:pointer; border-radius:50%; width:24px; height:24px; display:flex; justify-content:center; align-items:center; font-size:0.75rem; padding:0; outline:none; transition:background 0.2s" aria-label="Close Chat">
@@ -97,7 +97,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </header>
         <div class="chat-history" id="chatHistory" style="flex:1; padding:14px; overflow-y:auto; font-size:0.85rem; display:flex; flex-direction:column; gap:12px; background:rgba(249,250,251,0.5); box-sizing:border-box">
           <div class="chat-message bot" style="background:white; padding:10px 12px; border-radius:14px; border-top-left-radius:2px; align-self:flex-start; max-width:85%; line-height:1.45; text-align:left; border:1px solid rgba(229,231,235,0.8); box-shadow:0 2px 4px rgba(0,0,0,0.02)">
-            สวัสดีครับ ผมคือ <strong>ThaiLLM x Katgpt Advisor</strong> ยินดีให้บริการครับ! สอบถามเกี่ยวกับสภาพจราจร คอขวดเขตก่อสร้าง หรือแนวโน้มรถติดด้วยโมเดล KARC ได้เลยครับ
+            สวัสดีครับ ผมชื่อ <strong>ย่านาง</strong> ผู้ช่วยเดินทางอัจฉริยะของแอปฉลุย 🚗 สอบถามสภาพจราจร คอขวดเขตก่อสร้าง หรือแนวโน้มรถติด (พยากรณ์ด้วย KARC) ได้เลยครับ
           </div>
         </div>
         <form class="chat-input-row" id="thaiLlmChatForm" style="padding:12px; border-top:1px solid rgba(0,0,0,0.08); display:flex; gap:8px; background:white; box-sizing:border-box; align-items:center">
@@ -179,6 +179,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <div class="report-list-header"><strong>Report List</strong><button class="secondary-action small" id="createReportButton" type="button">Create</button></div>
             <div class="report-list" id="reportList"></div>
           </section>
+        </div>
+      </section>
+      <section class="reports-panel map-ui" id="alertsPanel" aria-hidden="true">
+        <header class="detail-header"><div><p class="eyebrow">Notifications</p><h2>การแจ้งเตือน</h2></div><button class="panel-toggle" id="closeAlerts" type="button">X</button></header>
+        <div class="reports-body">
+          <p style="font-size:0.82rem;color:#68746f;margin:0 0 10px">แจ้งเตือนเมื่อเข้าใกล้จุดก่อสร้างในรัศมี 500 ม. — จุดที่ไม่ผ่านมาตรฐานจะเตือนระดับอันตราย</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <button class="secondary-action" id="simulateAlert" type="button"><i class="fa-solid fa-bell"></i><span>จำลองแจ้งเตือน</span></button>
+          </div>
+          <div class="report-list" id="alertHistoryList"></div>
         </div>
       </section>
     </main>
