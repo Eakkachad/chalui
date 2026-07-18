@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ย่านาง AI — นำทาง</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header — ค้นหา + ปุ่ม -->
+        <header id="header">
+            <div class="header-row">
+                <h1>🧞</h1>
+                <input type="text" id="search-input" placeholder="พาฉันไป..." autofocus
+                       onkeydown="if(event.key==='Enter') navigateSearch()">
+                <button id="voice-btn" class="voice-btn" onclick="toggleVoice()">🎤</button>
+            </div>
+            <div class="chip-row" id="chip-row">
+                <button class="mini-chip" onclick="navigateTo('สนามบินสุวรรณภูมิ')">✈️ สนามบิน</button>
+                <button class="mini-chip" onclick="navigateTo('สยาม')">🛍️ สยาม</button>
+                <button class="mini-chip" onclick="navigateTo('เซ็นทรัล')">🏬 เซ็นทรัล</button>
+                <button class="mini-chip" onclick="navigateTo('ร้านอาหาร')">🍽️ อาหาร</button>
+                <button class="mini-chip style-chip" id="style-chip" onclick="toggleStylePanel()">😊</button>
+            </div>
+        </header>
+
+        <!-- Map เต็มจอ -->
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+
+        <!-- Route card — ซ้อนบน map -->
+        <div id="route-card" class="route-card hidden">
+            <div class="route-summary">
+                <div class="route-from" id="route-from"></div>
+                <div class="route-via">→</div>
+                <div class="route-to" id="route-to"></div>
+            </div>
+            <div class="route-meta">
+                <span id="route-time">⏱️ --</span>
+                <span id="route-distance">📏 --</span>
+            </div>
+            <div class="route-steps" id="route-steps"></div>
+            <button class="nav-btn" id="nav-btn" onclick="startNavigation()">▶️ เริ่มนำทาง</button>
+        </div>
+
+        <!-- Chat bar ล่าง — แบบ Google Maps -->
+        <div id="bottom-bar">
+            <div id="chat-box" class="collapsed">
+                <div class="message ai welcome">
+                    <div class="avatar">🧞</div>
+                    <div class="bubble">บอกฉันสิ อยากไปไหน?</div>
+                </div>
+            </div>
+            <div id="input-row">
+                <button id="send-btn" onclick="sendMessage()" title="ส่ง">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="white"/></svg>
+                </button>
+                <input type="text" id="user-input" placeholder="พิมพ์ข้อความ..."
+                       onkeydown="if(event.key==='Enter') sendMessage()">
+                <button class="style-float-btn" onclick="toggleStylePanel()" title="เปลี่ยนสไตล์">😊</button>
+            </div>
+        </div>
+
+        <!-- Style panel -->
+        <div id="style-panel" class="style-panel hidden">
+            <div class="panel-content">
+                <div class="panel-title">เลือกสไตล์</div>
+                <div class="style-grid">
+                    <button class="style-btn-sm active" data-style="cheerful" onclick="setStyle('cheerful')">😊 ร่าเริง</button>
+                    <button class="style-btn-sm" data-style="serious" onclick="setStyle('serious')">🎯 จริงจัง</button>
+                    <button class="style-btn-sm" data-style="concise" onclick="setStyle('concise')">⚡ กระชับ</button>
+                    <button class="style-btn-sm" data-style="friendly" onclick="setStyle('friendly')">🤗 เป็นมิตร</button>
+                    <button class="style-btn-sm" data-style="professional" onclick="setStyle('professional')">💼 มืออาชีพ</button>
+                </div>
+                <button class="panel-close" onclick="toggleStylePanel()">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="map.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

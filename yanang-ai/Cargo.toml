@@ -1,0 +1,36 @@
+[package]
+name = "yanang-ai"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+axum = { version = "0.8", features = ["macros", "http2"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "fs"] }
+tower = "0.5"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTTP client (for ThaiLLM API)
+reqwest = { version = "0.12", features = ["json"] }
+
+# Async stream & sync
+futures-util = "0.3"
+tokio-stream = "0.1"
+
+# katgpt personality engine (sigmoid-gated personality composition) — from crates.io
+katgpt-types = "0.1.1"
+katgpt-personality = "0.1.1"
+
+# Misc
+rand = "0.8"
+blake3 = "1"
+
+# TLS for HTTPS (speech recognition requires secure context)
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+rcgen = "0.13"
+rustls = "0.23"
+rustls-pki-types = "1"

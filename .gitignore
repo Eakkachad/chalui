@@ -5,3 +5,9 @@ dist/
 .DS_Store
 _check.txt
 _syntax.txt
+Voice-Agent/
+
+# Rust binaries
+yanang-ai/target/
+yanang-ai/*.pem
+*.exe
