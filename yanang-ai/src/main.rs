@@ -17,6 +17,11 @@ pub struct AppState {
     pub api_url: String,
     pub model: String,
     pub client: reqwest::Client,
+    /// Construction_Backend_Adapter — mock data วันนี้ หรือ Admin_Backend จริงเมื่อตั้งค่า
+    /// YANANG_ADMIN_BASE_URL (ดู src/api/backend.rs)
+    pub construction_backend: Arc<dyn api::backend::ConstructionBackend>,
+    /// Rate limiter สำหรับ POST /api/reports (per-session, 5 ครั้ง/10 นาที)
+    pub report_rate_limiter: routes::reports::ReportRateLimiter,
 }
 
 #[tokio::main]
@@ -46,6 +51,8 @@ async fn main() {
             .timeout(std::time::Duration::from_secs(120))
             .build()
             .expect("สร้าง HTTP client ล้มเหลว"),
+        construction_backend: api::backend::build_construction_backend(),
+        report_rate_limiter: routes::reports::ReportRateLimiter::new(),
     });
 
     // ── Print info ──
@@ -96,6 +103,16 @@ async fn main() {
         .route(
             "/api/navigation/places",
             axum::routing::post(routes::navigation::places_handler),
+        )
+        // Construction zone feed — ผ่าน Construction_Backend_Adapter (mock หรือ Admin_Backend จริง)
+        .route(
+            "/api/construction/projects",
+            axum::routing::get(routes::construction::projects_handler),
+        )
+        // Citizen report submission → Admin_Backend (queued locally if unreachable)
+        .route(
+            "/api/reports",
+            axum::routing::post(routes::reports::submit_report_handler),
         )
         .fallback_service(ServeDir::new("static"))
         .layer(cors)
