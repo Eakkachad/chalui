@@ -1,0 +1,14 @@
+{
+  "name": "yanang-ai-frontend-tests",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Test tooling for yanang-ai static frontend (push-to-talk voice assistant property tests). Not used at runtime — the app itself is served as plain static JS.",
+  "scripts": {
+    "test": "vitest --run"
+  },
+  "devDependencies": {
+    "fast-check": "^3.22.0",
+    "vitest": "^2.1.8"
+  }
+}

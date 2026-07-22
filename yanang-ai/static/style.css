@@ -73,9 +73,23 @@ html, body {
 }
 .voice-btn.listening { background: #e74c3c; animation: voicePulse 1s infinite; }
 .voice-btn.speaking { background: var(--primary); }
+.voice-btn.processing { background: #f0f0f0; animation: voiceProcessingSpin 0.9s linear infinite; }
+.voice-btn.error { background: #e74c3c; animation: voiceErrorShake 0.4s ease-in-out; }
 @keyframes voicePulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.4); }
     50% { box-shadow: 0 0 0 10px rgba(231,76,60,0); }
+}
+@keyframes voiceProcessingSpin {
+    0% { box-shadow: 0 0 0 2px var(--primary) inset, 0 0 0 0 transparent; }
+    50% { box-shadow: 0 0 0 2px var(--primary-dark) inset, 0 0 0 4px rgba(108,92,231,0.15); }
+    100% { box-shadow: 0 0 0 2px var(--primary) inset, 0 0 0 0 transparent; }
+}
+@keyframes voiceErrorShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-3px); }
+    40% { transform: translateX(3px); }
+    60% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
 }
 
 .chip-row {
@@ -358,3 +372,114 @@ html, body {
     box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
 }
 .dest-marker { font-size: 24px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)); }
+
+/* ── Construction markers ── */
+.construction-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+}
+.construction-marker.ok span { opacity: 0.9; }
+.construction-marker.pending span { opacity: 0.6; }
+.construction-marker.danger span {
+    animation: constructionDangerPulse 1.2s ease-in-out infinite;
+}
+@keyframes constructionDangerPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+}
+
+.construction-popup {
+    font-size: 13px;
+    line-height: 1.5;
+    min-width: 180px;
+}
+.construction-popup strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+/* ── Driver Alert Banner (ระยะจริงจาก proximity watch) ── */
+.driver-alert-container {
+    position: fixed;
+    z-index: 2500;
+    top: 78px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(420px, calc(100vw - 24px));
+    pointer-events: none;
+}
+
+.driver-alert-banner {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #ffffff;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transform: translateY(-16px);
+    transition: opacity 300ms ease, transform 300ms ease;
+    pointer-events: auto;
+    font-family: inherit;
+}
+.driver-alert-banner.alert-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.driver-alert-banner .alert-icon { font-size: 1.3rem; line-height: 1; }
+.driver-alert-banner .alert-content strong {
+    display: block;
+    font-size: 0.82rem;
+    margin-bottom: 3px;
+    color: #fbbf24;
+}
+.driver-alert-banner .alert-content p {
+    margin: 0 0 5px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.driver-alert-banner .alert-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    font-size: 0.68rem;
+    opacity: 0.85;
+}
+.driver-alert-banner .alert-content small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.66rem;
+    opacity: 0.7;
+}
+.driver-alert-banner .alert-dismiss {
+    border: 0;
+    background: rgba(255,255,255,0.15);
+    color: #ffffff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+}
+.driver-alert-banner .alert-dismiss:hover { background: rgba(255,255,255,0.3); }
+
+.driver-alert-banner.danger-alert {
+    background: linear-gradient(135deg, #7f1d1d, #dc2626);
+    border-left: 4px solid #fbbf24;
+    animation: dangerBannerPulse 1.5s ease-in-out infinite;
+}
+@keyframes dangerBannerPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4); }
+    50% { box-shadow: 0 4px 30px rgba(220, 38, 38, 0.8); }
+}

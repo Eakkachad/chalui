@@ -3,8 +3,6 @@
 const API_BASE = '/api';
 let currentStyle = 'cheerful';
 let messageHistory = [];
-let recognition = null;
-let isListening = false;
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -143,23 +141,16 @@ async function sendMessage() {
     openChat();
     showStatus('🤔...');
 
-    const history = messageHistory.slice(-10);
+    const history = YanangChatBridge.getHistory();
 
     try {
-        const resp = await fetch(`${API_BASE}/chat`, {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({message:text, style:currentStyle, history}),
-        });
-        if (!resp.ok) throw new Error('เชื่อมต่อไม่ได้');
-
-        const data = await resp.json();
+        const data = await YanangChatBridge.postChat({ message: text, style: currentStyle, history });
         hideStatus();
 
         if (data.response) {
             addChat('ai', data.response);
             speakThai(data.response);
-            messageHistory.push({role:'user', content:text});
-            messageHistory.push({role:'assistant', content:data.response});
+            YanangChatBridge.pushHistory(text, data.response);
         }
 
         // If navigate intent → also route
@@ -174,52 +165,47 @@ async function sendMessage() {
     }
 }
 
-// ── Voice ──
-function toggleVoice() {
-    if (isListening) { stopVoice(); return; }
-    startVoice();
-}
+// ── Bridge exposed for voice-controller.js — shared with typed-message flow above ──
+// so both code paths hit exactly one implementation of the HTTP call to /api/chat.
+const YanangChatBridge = {
+    // Returns the currently selected style key, or null if it isn't one of the 5 known styles
+    // (used to detect the "cannot determine a valid style" branch — Requirement 9.2 / Property 18).
+    getActiveStyle() {
+        const known = ['cheerful', 'serious', 'concise', 'friendly', 'professional'];
+        return known.includes(currentStyle) ? currentStyle : null;
+    },
 
-function startVoice() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { addChat('ai','⚠️ เบราว์เซอร์ไม่รองรับเสียง'); return; }
+    getHistory() {
+        return messageHistory.slice(-10);
+    },
 
-    if (!recognition) {
-        recognition = new SR();
-        recognition.lang = 'th-TH';
-        recognition.interimResults = false;
-        recognition.onresult = (e) => {
-            const t = e.results[0][0].transcript;
-            setVoiceUI(false);
-            // If navigation command, route it
-            if (t.match(/พาไป|ไป|เส้นทาง|ทาง/)) {
-                document.getElementById('search-input').value = t.replace(/^(พาไป|ไป|หา|ช่วย)\s*/,'');
-                navigateSearch();
-            } else {
-                document.getElementById('user-input').value = t;
-                sendMessage();
-            }
-        };
-        recognition.onerror = (e) => {
-            setVoiceUI(false);
-            if (e.error !== 'no-speech') addChat('ai', `⚠️ ${e.error === 'not-allowed' ? 'ไม่อนุญาตไมค์' : 'เกิดข้อผิดพลาด'}`);
-        };
-        recognition.onend = () => setVoiceUI(false);
-    }
-    try { recognition.start(); setVoiceUI(true); } catch(e) {}
-}
+    pushHistory(userText, aiText) {
+        messageHistory.push({ role: 'user', content: userText });
+        messageHistory.push({ role: 'assistant', content: aiText });
+    },
 
-function stopVoice() {
-    if (recognition) try { recognition.stop(); } catch(e) {}
-    setVoiceUI(false);
-}
+    // payload: { message, style, history, voiceContext? }
+    async postChat(payload) {
+        const body = { message: payload.message, style: payload.style, history: payload.history };
+        if (payload.voiceContext) body.voice_context = payload.voiceContext;
 
-function setVoiceUI(on) {
-    isListening = on;
-    const btn = document.getElementById('voice-btn');
-    btn.classList.toggle('listening', on);
-    btn.textContent = on ? '🔴' : '🎤';
-}
+        const resp = await fetch(`${API_BASE}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!resp.ok) throw new Error('เชื่อมต่อไม่ได้');
+        return resp.json();
+    },
+
+    addChat,
+    speakThai,
+};
+window.YanangChatBridge = YanangChatBridge;
+
+// ── Voice (push-to-talk) — wiring lives in voice-controller-init.js, loaded after this file ──
+// Legacy toggleVoice()/startVoice()/stopVoice() removed: Requirement 1-6 replace the old
+// tap-to-toggle model with press-and-hold, implemented by VoiceController (static/voice-controller.js).
 
 // ── TTS ──
 function speakThai(text) {

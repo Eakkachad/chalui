@@ -15,13 +15,15 @@
                 <h1>🧞</h1>
                 <input type="text" id="search-input" placeholder="พาฉันไป..." autofocus
                        onkeydown="if(event.key==='Enter') navigateSearch()">
-                <button id="voice-btn" class="voice-btn" onclick="toggleVoice()">🎤</button>
+                <button id="voice-btn" class="voice-btn" title="กดค้างเพื่อพูด">🎤</button>
             </div>
             <div class="chip-row" id="chip-row">
                 <button class="mini-chip" onclick="navigateTo('สนามบินสุวรรณภูมิ')">✈️ สนามบิน</button>
                 <button class="mini-chip" onclick="navigateTo('สยาม')">🛍️ สยาม</button>
                 <button class="mini-chip" onclick="navigateTo('เซ็นทรัล')">🏬 เซ็นทรัล</button>
                 <button class="mini-chip" onclick="navigateTo('ร้านอาหาร')">🍽️ อาหาร</button>
+                <button class="mini-chip" onclick="testConstructionAlert()" title="เครื่องมือ dev/demo เท่านั้น — ไม่ใช่เส้นทาง production ของการนำทาง">🧪 ทดสอบแจ้งเตือน</button>
+                <button class="mini-chip" onclick="openReportPanel()">📢 แจ้งปัญหา</button>
                 <button class="mini-chip style-chip" id="style-chip" onclick="toggleStylePanel()">😊</button>
             </div>
         </header>
@@ -81,7 +83,11 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="alerts.js"></script>
     <script src="map.js"></script>
     <script src="app.js"></script>
+    <script src="report.js"></script>
+    <script type="module" src="voice-controller.js"></script>
+    <script defer src="voice-controller-init.js"></script>
 </body>
 </html>

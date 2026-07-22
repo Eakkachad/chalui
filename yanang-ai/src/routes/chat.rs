@@ -22,6 +22,63 @@ pub struct ChatRequest {
     pub message: String,
     pub style: Option<String>,
     pub history: Option<Vec<Message>>,
+    /// เพิ่มใหม่สำหรับ push-to-talk voice assistant — มีเฉพาะคำขอที่มาจาก Voice_Controller
+    /// ไม่มี field นี้เลยสำหรับคำขอแบบพิมพ์ (backward compatible 100%)
+    pub voice_context: Option<VoiceContext>,
+}
+
+/// บริบทเพิ่มเติมที่แนบมาจาก Voice_Controller — ตำแหน่งผู้ใช้ + โครงการก่อสร้างใกล้เคียง
+#[derive(Debug, Deserialize)]
+pub struct VoiceContext {
+    pub location: Option<GeoPoint>,
+    pub nearby_projects: Option<Vec<NearbyProjectContext>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeoPoint {
+    pub lat: f64,
+    pub lng: f64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct NearbyProjectContext {
+    pub name: String,
+    pub road_name: String,
+    pub distance_m: f64,
+    pub compliance_verdict: String,
+}
+
+/// Pure — สร้าง fragment ของ system prompt จาก VoiceContext หรือ None ถ้าไม่มีข้อมูล
+/// ไม่มี side effect ใดๆ ทดสอบได้ตรงๆโดยไม่ต้องพึ่ง Axum/HTTP
+pub fn build_voice_context_prompt_fragment(ctx: &Option<VoiceContext>) -> Option<String> {
+    let ctx = ctx.as_ref()?;
+
+    let mut lines: Vec<String> = Vec::new();
+
+    if let Some(loc) = &ctx.location {
+        lines.push(format!(
+            "ตำแหน่งปัจจุบันของผู้ใช้: ละติจูด {:.4}, ลองจิจูด {:.4}",
+            loc.lat, loc.lng
+        ));
+    }
+
+    if let Some(projects) = &ctx.nearby_projects {
+        if !projects.is_empty() {
+            lines.push("โครงการก่อสร้างใกล้เคียง:".to_string());
+            for p in projects {
+                lines.push(format!(
+                    "- {} บนถนน{} ห่างออกไป {:.0} เมตร (สถานะ: {})",
+                    p.name, p.road_name, p.distance_m, p.compliance_verdict
+                ));
+            }
+        }
+    }
+
+    if lines.is_empty() {
+        return None;
+    }
+
+    Some(format!("[บริบทตำแหน่งและโครงการก่อสร้าง]\n{}", lines.join("\n")))
 }
 
 /// Simplified message for frontend exchange
@@ -103,7 +160,11 @@ pub async fn chat_handler(
         Intent::Chat => "ทั่วไป — ผู้ใช้ต้องการพูดคุย",
     };
 
-    let system_prompt = build_guardrailed_prompt(&style, intent_context);
+    let mut system_prompt = build_guardrailed_prompt(&style, intent_context);
+    if let Some(fragment) = build_voice_context_prompt_fragment(&req.voice_context) {
+        system_prompt.push_str("\n\n");
+        system_prompt.push_str(&fragment);
+    }
 
     // ── 6. Build message list for API ──
     let mut messages: Vec<ChatMessage> = vec![ChatMessage {
@@ -343,4 +404,147 @@ fn style_id(style: &YanangStyle) -> String {
         YanangStyle::Professional => "professional",
     }
     .to_string()
+}
+
+#[cfg(test)]
+mod voice_context_tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    // Feature: push-to-talk-voice-assistant, Property 19: Voice context is embedded into the system prompt (backend)
+    proptest! {
+        #![proptest_config(ProptestConfig { cases: 100, ..ProptestConfig::default() })]
+
+        #[test]
+        fn property_19_fragment_contains_location_and_projects(
+            lat in -90.0f64..90.0,
+            lng in -180.0f64..180.0,
+            include_location in proptest::bool::ANY,
+            project_names in proptest::collection::vec("[a-zA-Z ]{1,20}", 0..5),
+        ) {
+            let projects: Vec<NearbyProjectContext> = project_names
+                .iter()
+                .enumerate()
+                .map(|(i, name)| NearbyProjectContext {
+                    name: name.clone(),
+                    road_name: format!("Road{}", i),
+                    distance_m: (i as f64) * 100.0,
+                    compliance_verdict: "pass".to_string(),
+                })
+                .collect();
+
+            let ctx = Some(VoiceContext {
+                location: if include_location { Some(GeoPoint { lat, lng }) } else { None },
+                nearby_projects: if projects.is_empty() { None } else { Some(projects.clone()) },
+            });
+
+            let fragment = build_voice_context_prompt_fragment(&ctx);
+
+            if !include_location && projects.is_empty() {
+                // ไม่มีข้อมูลอะไรเลย -> None
+                prop_assert!(fragment.is_none());
+            } else {
+                let text = fragment.expect("fragment should be Some when data is present");
+                if include_location {
+                    let lat_str = format!("{:.4}", lat);
+                    let lng_str = format!("{:.4}", lng);
+                    prop_assert!(text.contains(&lat_str));
+                    prop_assert!(text.contains(&lng_str));
+                }
+                for p in &projects {
+                    let distance_str = format!("{:.0}", p.distance_m);
+                    prop_assert!(text.contains(&p.name));
+                    prop_assert!(text.contains(&distance_str));
+                }
+            }
+        }
+    }
+
+    // Feature: push-to-talk-voice-assistant, Property 20: Requests without voice context process identically to today (backend)
+    proptest! {
+        #![proptest_config(ProptestConfig { cases: 100, ..ProptestConfig::default() })]
+
+        #[test]
+        fn property_20_none_voice_context_produces_no_fragment(
+            style_seed in 0u8..5,
+            intent_seed in 0u8..6,
+        ) {
+            let styles = [
+                YanangStyle::Cheerful,
+                YanangStyle::Serious,
+                YanangStyle::Concise,
+                YanangStyle::Friendly,
+                YanangStyle::Professional,
+            ];
+            let intents = [
+                "การนำทาง — ผู้ใช้ต้องการเส้นทาง",
+                "สถานที่ — ผู้ใช้ถามเกี่ยวกับสถานที่",
+                "จราจร — ผู้ใช้สอบถามสภาพการจราจร",
+                "อากาศ — ผู้ใช้สอบถามสภาพอากาศ",
+                "อาหาร — ผู้ใช้ถามเกี่ยวกับร้านอาหาร",
+                "ทั่วไป — ผู้ใช้ต้องการพูดคุย",
+            ];
+            let style = styles[style_seed as usize];
+            let intent_context = intents[intent_seed as usize];
+
+            let baseline_prompt = build_guardrailed_prompt(&style, intent_context);
+
+            // จำลองสิ่งที่ chat_handler ทำเมื่อ voice_context เป็น None
+            let ctx: Option<VoiceContext> = None;
+            let mut system_prompt = build_guardrailed_prompt(&style, intent_context);
+            if let Some(fragment) = build_voice_context_prompt_fragment(&ctx) {
+                system_prompt.push_str("\n\n");
+                system_prompt.push_str(&fragment);
+            }
+
+            prop_assert!(build_voice_context_prompt_fragment(&ctx).is_none());
+            prop_assert_eq!(system_prompt, baseline_prompt);
+        }
+    }
+
+    /// Smoke test: backward-compat ที่ระดับ wire format
+    ///
+    /// หมายเหตุ: ไม่ได้ boot axum router จริงแล้วยิง POST เพราะ chat_handler เรียก ThaiLLM API
+    /// จริงผ่าน network (ไม่มี mock layer สำหรับ thaillm::send_chat ในโค้ดปัจจุบัน) การยิง network
+    /// call จริงในเทสต์จะ flaky/พึ่งพา external service ที่ควบคุมไม่ได้ จึงตรวจสอบที่จุดเสี่ยงจริง
+    /// ของ backward-compat แทน: payload แบบเดิม (ไม่มี field `voice_context` เลย) ต้อง deserialize
+    /// เป็น ChatRequest ได้สำเร็จเหมือนก่อนมี field นี้
+    #[test]
+    fn smoke_legacy_payload_without_voice_context_deserializes() {
+        let legacy_json = r#"{
+            "message": "พาไปสยาม",
+            "style": "cheerful",
+            "history": [{"role": "user", "content": "สวัสดี"}]
+        }"#;
+
+        let parsed: Result<ChatRequest, _> = serde_json::from_str(legacy_json);
+        assert!(
+            parsed.is_ok(),
+            "legacy payload without voice_context must still deserialize: {:?}",
+            parsed.err()
+        );
+        let req = parsed.unwrap();
+        assert!(req.voice_context.is_none());
+        assert_eq!(req.message, "พาไปสยาม");
+    }
+
+    #[test]
+    fn smoke_payload_with_voice_context_deserializes() {
+        let voice_json = r#"{
+            "message": "มีงานก่อสร้างข้างหน้าไหม",
+            "style": "concise",
+            "history": [],
+            "voice_context": {
+                "location": {"lat": 13.7563, "lng": 100.5018},
+                "nearby_projects": [
+                    {"name": "Test Project", "road_name": "Test Road", "distance_m": 250.0, "compliance_verdict": "fail"}
+                ]
+            }
+        }"#;
+
+        let parsed: Result<ChatRequest, _> = serde_json::from_str(voice_json);
+        assert!(parsed.is_ok(), "voice payload must deserialize: {:?}", parsed.err());
+        let req = parsed.unwrap();
+        assert!(req.voice_context.is_some());
+    }
 }
